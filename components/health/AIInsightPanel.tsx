@@ -121,15 +121,20 @@ export default function AIInsightPanel({ indicators, azureAI, isVisible }: AIIns
 
       const explainPrompt = `${contextInfo}
 
-请基于以上用户信息和检查指标，提供个性化的健康解读：
+请基于以上用户信息和检查指标，提供个性化的健康解读。
 
-1. **指标含义**：简要说明这个指标的医学意义
-2. **结果分析**：结合用户年龄性别，分析当前数值
-3. **健康影响**：说明对健康可能的影响
-4. **个性化建议**：基于用户情况给出具体建议
-5. **注意事项**：需要关注的要点
+请按以下格式回答，不要使用任何markdown格式（如**粗体**、*斜体*、#标题等）：
 
-请用通俗易懂的语言，控制在250字以内。`
+指标含义：
+这个指标代表什么，有什么医学意义
+
+当前状态：
+您的检测结果${indicator.value}${indicator.unit}在参考范围${indicator.normalRange}中的位置，是否达标，结合您的年龄${userProfile.age}岁、性别${userProfile.gender}来看
+
+关注建议：
+如果需要关注，具体应该检查什么项目，或者采取什么措施，基于您的个人情况给出建议
+
+请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
 
       const explanation = await azureAI.healthChat(explainPrompt, {
         indicator,

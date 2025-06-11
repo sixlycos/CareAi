@@ -52,23 +52,33 @@ export default function HealthIndicatorCard({
     <Card 
       className={`transition-all duration-200 ${
         isAIMode 
-          ? 'cursor-pointer hover:shadow-md hover:border-purple-300 hover:bg-purple-50/50 dark:hover:bg-purple-900/10' 
-          : ''
+          ? 'cursor-pointer hover:shadow-lg hover:shadow-purple-200/50 hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 bg-gradient-to-br from-purple-50/30 to-white dark:from-purple-900/10 dark:to-gray-800' 
+          : 'hover:shadow-md'
       } ${
         isAIMode 
-          ? 'relative ring-2 ring-purple-200 dark:ring-purple-800' 
+          ? 'relative ring-2 ring-purple-200 dark:ring-purple-800 ring-offset-2' 
           : ''
       }`}
       onClick={handleClick}
     >
       {/* AI模式指示器 */}
       {isAIMode && (
-        <div className="absolute -top-1 -right-1 bg-purple-600 text-white p-1 rounded-full z-10">
+        <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white p-1.5 rounded-full z-10 shadow-lg animate-bounce">
           <Brain className="h-3 w-3" />
         </div>
       )}
       
-      <CardContent className="p-3">
+      {/* AI模式横幅 */}
+      {isAIMode && (
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-center py-1 rounded-t-lg">
+          <span className="text-xs font-medium flex items-center justify-center gap-1">
+            <Brain className="h-3 w-3" />
+            AI解读模式
+          </span>
+        </div>
+      )}
+      
+      <CardContent className={`p-3 ${isAIMode ? 'pt-8' : ''}`}>
         <div className="space-y-2">
           {/* 指标名称 */}
           <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
@@ -95,14 +105,6 @@ export default function HealthIndicatorCard({
             {getStatusIcon()}
             {getStatusText()}
           </div>
-          
-          {/* AI模式提示 */}
-          {isAIMode && (
-            <div className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1 mt-2">
-              <Brain className="h-3 w-3" />
-              点击获取AI解读
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

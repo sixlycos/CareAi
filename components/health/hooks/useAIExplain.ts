@@ -23,13 +23,18 @@ export function useAIExplain(azureAI: AzureHealthAISystem) {
 参考范围：${indicator.normalRange}
 状态：${indicator.status}
 
-请提供：
-1. 这个指标的含义和重要性
-2. 当前数值的评估
-3. 针对性的健康建议
-4. 需要注意的事项
+请按以下格式回答，不要使用任何markdown格式（如**粗体**、*斜体*、#标题等）：
 
-请用通俗易懂的语言，不要超过200字。`
+指标含义：
+这个指标代表什么，有什么医学意义
+
+当前状态：
+您的检测结果${indicator.value}${indicator.unit}在参考范围${indicator.normalRange}中的位置，是否达标
+
+关注建议：
+如果需要关注，具体应该检查什么项目，或者采取什么措施
+
+请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
 
       // 调用AI获取解读
       const explanation = await azureAI.healthChat(explainPrompt, {

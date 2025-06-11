@@ -35,7 +35,7 @@ export default function OCRLayoutVisualization({
   isEditable = true,
   currentPage = 1
 }: OCRLayoutVisualizationProps) {
-  const [scale, setScale] = useState(0.5)
+  const [scale, setScale] = useState(1.5)
   const [editingLine, setEditingLine] = useState<number | null>(null)
   const [editText, setEditText] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
