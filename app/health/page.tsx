@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { HealthDatabase } from "@/lib/supabase/database";
 import ReportUpload from "@/components/health/ReportUpload";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, FileText, MessageCircle, TrendingUp, Calendar } from "lucide-react";
+import { Heart, FileText, MessageCircle, TrendingUp, Calendar, Brain, Zap, Activity } from "lucide-react";
 
 export default async function HealthDashboard() {
   const supabase = await createClient();
@@ -12,11 +13,22 @@ export default async function HealthDashboard() {
     redirect("/auth/login");
   }
 
+  // 获取用户健康数据
+  const healthDB = new HealthDatabase();
+  let userProfile = await healthDB.getUserProfile(data.user.id);
+  
+  // 如果用户档案不存在，创建一个
+  if (!userProfile) {
+    userProfile = await healthDB.createUserProfile(data.user.id);
+  }
+
+  const userStats = await healthDB.getUserStats(data.user.id);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-white dark:bg-background">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-4 lg:pl-24 lg:pr-8 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -31,7 +43,7 @@ export default async function HealthDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 lg:pl-24 lg:pr-8 py-8">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
@@ -40,8 +52,8 @@ export default async function HealthDashboard() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">本月新增</p>
+              <div className="text-2xl font-bold">{userStats.reportsAnalyzed}</div>
+              <p className="text-xs text-muted-foreground">累计分析</p>
             </CardContent>
           </Card>
 
@@ -51,8 +63,8 @@ export default async function HealthDashboard() {
               <MessageCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">本月累计</p>
+              <div className="text-2xl font-bold">{userStats.consultationCount}</div>
+              <p className="text-xs text-muted-foreground">累计咨询</p>
             </CardContent>
           </Card>
 
@@ -62,8 +74,12 @@ export default async function HealthDashboard() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">--</div>
-              <p className="text-xs text-muted-foreground">待首次分析</p>
+              <div className="text-2xl font-bold">
+                {userStats.healthScore ? userStats.healthScore : '--'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {userStats.healthScore ? '基于最新分析' : '待首次分析'}
+              </p>
             </CardContent>
           </Card>
 
@@ -73,123 +89,59 @@ export default async function HealthDashboard() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">--</div>
-              <p className="text-xs text-muted-foreground">建议时间</p>
+              <div className="text-2xl font-bold">
+                {userStats.nextCheckup ? new Date(userStats.nextCheckup).toLocaleDateString('zh-CN') : '--'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {userStats.nextCheckup ? '建议时间' : '待设置'}
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Report Upload Section */}
-          <div className="lg:col-span-2">
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  体检报告AI解读
-                </CardTitle>
-                <CardDescription>
-                  上传您的体检报告，让AI为您提供专业的健康分析和建议
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            {/* Report Upload Component */}
-            <ReportUpload />
-          </div>
+        {/* 新的快捷操作区域 - 卡片样式 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-200">
+            <CardContent className="flex items-center p-6">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg mr-4">
+                <MessageCircle className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">AI健康问答</h3>
+                <p className="text-sm text-muted-foreground">随时咨询健康问题</p>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">快捷操作</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <button className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors">
-                  <div className="flex items-center gap-3">
-                    <MessageCircle className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <div className="font-medium">AI健康问答</div>
-                      <div className="text-sm text-muted-foreground">随时咨询健康问题</div>
-                    </div>
-                  </div>
-                </button>
-                
-                <button className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors">
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    <div>
-                      <div className="font-medium">健康趋势</div>
-                      <div className="text-sm text-muted-foreground">查看历史数据变化</div>
-                    </div>
-                  </div>
-                </button>
-                
-                <button className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-purple-600" />
-                    <div>
-                      <div className="font-medium">健康计划</div>
-                      <div className="text-sm text-muted-foreground">制定个性化方案</div>
-                    </div>
-                  </div>
-                </button>
-              </CardContent>
-            </Card>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-green-200">
+            <CardContent className="flex items-center p-6">
+              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg mr-4">
+                <TrendingUp className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">健康趋势</h3>
+                <p className="text-sm text-muted-foreground">查看历史数据变化</p>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">最近活动</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>暂无活动记录</p>
-                  <p className="text-sm">上传第一份体检报告开始使用</p>
-                </div>
-              </CardContent>
-            </Card>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-purple-200">
+            <CardContent className="flex items-center p-6">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg mr-4">
+                <Activity className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">健康计划</h3>
+                <p className="text-sm text-muted-foreground">制定个性化方案</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* Health Tips */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">健康小贴士</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <div className="font-medium text-blue-700 dark:text-blue-300 mb-1">
-                      💧 每日饮水
-                    </div>
-                    <div className="text-sm text-blue-600 dark:text-blue-400">
-                      建议每天饮水8杯，约2000ml，有助于维持身体正常代谢
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <div className="font-medium text-green-700 dark:text-green-300 mb-1">
-                      🏃‍♂️ 规律运动
-                    </div>
-                    <div className="text-sm text-green-600 dark:text-green-400">
-                      每周至少150分钟中等强度运动，有效预防慢性疾病
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <div className="font-medium text-orange-700 dark:text-orange-300 mb-1">
-                      😴 充足睡眠
-                    </div>
-                    <div className="text-sm text-orange-600 dark:text-orange-400">
-                      成年人建议每晚7-9小时睡眠，保持规律作息时间
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Main Content - 扩充为全宽 */}
+        <div className="w-full">
+          {/* Report Upload Component - 扩充为全宽 */}
+          <ReportUpload />
         </div>
       </div>
     </div>

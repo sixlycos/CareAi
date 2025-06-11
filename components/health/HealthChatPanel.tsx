@@ -133,7 +133,7 @@ export default function HealthChatPanel({
 
   return (
     <Card className="h-[600px] flex flex-col">
-      <CardHeader>
+      <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5" />
           AI健康咨询
@@ -157,7 +157,7 @@ export default function HealthChatPanel({
         )}
 
         {/* 消息列表 */}
-        <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 pb-2 space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -165,7 +165,7 @@ export default function HealthChatPanel({
                 message.role === 'user' ? 'flex-row-reverse' : ''
               }`}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                 message.role === 'user' 
                   ? 'bg-blue-500 text-white' 
                   : 'bg-green-500 text-white'
@@ -176,12 +176,12 @@ export default function HealthChatPanel({
                   <Bot className="h-4 w-4" />
                 )}
               </div>
-              <div className={`flex-1 max-w-[80%] ${
-                message.role === 'user' ? 'text-right' : ''
+              <div className={`flex-1 max-w-[85%] ${
+                message.role === 'user' ? 'flex flex-col items-end' : ''
               }`}>
                 <div className={`p-3 rounded-lg ${
                   message.role === 'user'
-                    ? 'bg-blue-500 text-white ml-auto'
+                    ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 dark:bg-gray-800'
                 }`}>
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">
@@ -200,7 +200,7 @@ export default function HealthChatPanel({
           {/* 加载状态 */}
           {isLoading && (
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center">
                 <Bot className="h-4 w-4" />
               </div>
               <div className="flex-1">
@@ -219,15 +219,15 @@ export default function HealthChatPanel({
 
         {/* 快捷问题 */}
         {messages.length <= 1 && (
-          <div className="px-6 pb-4">
-            <div className="text-sm text-gray-600 mb-2">常见问题：</div>
+          <div className="px-6 pb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div className="text-sm text-gray-600 mb-3">常见问题：</div>
             <div className="flex flex-wrap gap-2">
               {getCommonQuestions().map((question, index) => (
                 <Button
                   key={index}
                   variant="outline"
                   size="sm"
-                  className="text-xs"
+                  className="text-xs h-8"
                   onClick={() => handleQuickQuestion(question)}
                   disabled={isLoading}
                 >
@@ -239,21 +239,21 @@ export default function HealthChatPanel({
         )}
 
         {/* 输入区域 */}
-        <div className="border-t p-4 bg-gray-50 dark:bg-gray-900">
-          <div className="flex gap-2">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
+          <div className="flex gap-3">
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="询问任何关于您健康状况的问题..."
-              className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100"
               rows={1}
               disabled={isLoading}
             />
             <Button
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isLoading}
-              className="px-4"
+              className="px-4 flex-shrink-0"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

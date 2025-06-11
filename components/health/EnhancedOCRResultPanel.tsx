@@ -259,23 +259,23 @@ export default function EnhancedOCRResultPanel({
         </CardContent>
       </Card>
 
-              {/* 文本内容 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-blue-500" />
-                文本内容
-                {totalPages > 1 ? (
-                  <span className="text-sm text-gray-500">
-                    (第{currentPage}页，共{currentPageLines.length}行)
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-500">
-                    ({parsedResult.extractedText.length} 行)
-                  </span>
-                )}
-              </div>
+      {/* 文本内容 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-blue-500" />
+              文本内容
+              {totalPages > 1 ? (
+                <span className="text-sm text-gray-500">
+                  (第{currentPage}页，共{currentPageLines.length}行)
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500">
+                  ({parsedResult.extractedText.length} 行)
+                </span>
+              )}
+            </div>
             <div className="flex gap-2">
               {/* 视图切换按钮 */}
               <div className="flex border rounded-lg p-1">
@@ -336,124 +336,124 @@ export default function EnhancedOCRResultPanel({
               )}
             </div>
           </CardTitle>
-                  </CardHeader>
-          <CardContent>
-            {/* 分页控制 */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <span>页面布局已优化，按位置智能排序</span>
-                  {pageInfo && (
-                    <span className="text-xs">
-                      ({pageInfo.width}×{pageInfo.height}px, 旋转{pageInfo.angle.toFixed(1)}°)
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    上一页
-                  </Button>
-                  <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-sm">
-                    {currentPage} / {totalPages}
+        </CardHeader>
+        <CardContent>
+          {/* 分页控制 */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>页面布局已优化，按位置智能排序</span>
+                {pageInfo && (
+                  <span className="text-xs">
+                    ({pageInfo.width}×{pageInfo.height}px, 旋转{pageInfo.angle.toFixed(1)}°)
                   </span>
-                  <Button
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  上一页
+                </Button>
+                <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-sm">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* 根据视图模式显示不同内容 */}
+          {viewMode === 'list' ? (
+            /* 列表视图 */
+            <div className="max-h-96 overflow-y-auto space-y-2 border rounded-lg p-4">
+              {currentPageLines.map((structuredItem) => {
+                const globalIndex = structuredItem.lineNumber
+                const text = isEditing ? editedTexts[globalIndex] : structuredItem.text
+                
+                return (
+                  <div key={globalIndex} className="flex items-start gap-3 p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <div className="flex-shrink-0 w-12 text-xs text-gray-500 font-mono flex flex-col">
+                      <span>{globalIndex.toString().padStart(2, '0')}</span>
+                      {totalPages > 1 && (
+                        <span className="text-blue-500">P{structuredItem.pageNumber}</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1">
+                      {isEditing ? (
+                        <textarea
+                          value={text}
+                          onChange={(e) => handleTextChange(globalIndex, e.target.value)}
+                          className="w-full p-1 text-sm border rounded resize-none"
+                          rows={1}
+                          style={{ minHeight: '24px' }}
+                        />
+                      ) : (
+                        <div className="text-sm">{text || '(空行)'}</div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge 
+                        variant={getConfidenceBadgeVariant(structuredItem.confidence)}
+                        className="text-xs"
+                      >
+                        {(structuredItem.confidence * 100).toFixed(0)}%
+                      </Badge>
+                      {totalPages > 1 && (
+                        <span className="text-xs text-gray-400">
+                          ({structuredItem.x}, {structuredItem.y})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            /* 布局视图 */
+            <OCRLayoutVisualization
+              structuredData={currentPageLines.map(item => ({
+                ...item,
+                text: editedTexts[item.lineNumber] || item.text
+              }))}
+              pageInfo={pageInfo}
+              onTextEdit={onTextEdit ? handleLayoutTextEdit : undefined}
+              isEditable={!!onTextEdit}
+              currentPage={currentPage}
+            />
+          )}
+
+          {hasChanges && (
+            <Alert className="mt-4">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                您已修改了文本内容，{viewMode === 'layout' ? '修改会自动保存，' : '别忘记保存修改以'}应用到后续分析中
+                {viewMode === 'layout' && onTextEdit && (
+                  <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
+                    className="ml-2"
+                    onClick={handleSaveChanges}
                   >
-                    下一页
+                    <Check className="h-4 w-4 mr-1" />
+                    应用所有修改
                   </Button>
-                </div>
-              </div>
-            )}
-
-            {/* 根据视图模式显示不同内容 */}
-            {viewMode === 'list' ? (
-              /* 列表视图 */
-              <div className="max-h-96 overflow-y-auto space-y-2 border rounded-lg p-4">
-                {currentPageLines.map((structuredItem) => {
-                  const globalIndex = structuredItem.lineNumber
-                  const text = isEditing ? editedTexts[globalIndex] : structuredItem.text
-                  
-                  return (
-                    <div key={globalIndex} className="flex items-start gap-3 p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <div className="flex-shrink-0 w-12 text-xs text-gray-500 font-mono flex flex-col">
-                        <span>{globalIndex.toString().padStart(2, '0')}</span>
-                        {totalPages > 1 && (
-                          <span className="text-blue-500">P{structuredItem.pageNumber}</span>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1">
-                        {isEditing ? (
-                          <textarea
-                            value={text}
-                            onChange={(e) => handleTextChange(globalIndex, e.target.value)}
-                            className="w-full p-1 text-sm border rounded resize-none"
-                            rows={1}
-                            style={{ minHeight: '24px' }}
-                          />
-                        ) : (
-                          <div className="text-sm">{text || '(空行)'}</div>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col items-end gap-1">
-                        <Badge 
-                          variant={getConfidenceBadgeVariant(structuredItem.confidence)}
-                          className="text-xs"
-                        >
-                          {(structuredItem.confidence * 100).toFixed(0)}%
-                        </Badge>
-                        {totalPages > 1 && (
-                          <span className="text-xs text-gray-400">
-                            ({structuredItem.x}, {structuredItem.y})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              /* 布局视图 */
-              <OCRLayoutVisualization
-                structuredData={currentPageLines.map(item => ({
-                  ...item,
-                  text: editedTexts[item.lineNumber] || item.text
-                }))}
-                pageInfo={pageInfo}
-                onTextEdit={onTextEdit ? handleLayoutTextEdit : undefined}
-                isEditable={!!onTextEdit}
-                currentPage={currentPage}
-              />
-            )}
-
-            {hasChanges && (
-              <Alert className="mt-4">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  您已修改了文本内容，{viewMode === 'layout' ? '修改会自动保存，' : '别忘记保存修改以'}应用到后续分析中
-                  {viewMode === 'layout' && onTextEdit && (
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      className="ml-2"
-                      onClick={handleSaveChanges}
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      应用所有修改
-                    </Button>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
     </div>

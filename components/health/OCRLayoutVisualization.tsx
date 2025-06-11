@@ -114,7 +114,7 @@ export default function OCRLayoutVisualization({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setScale(0.5)}
+              onClick={() => setScale(1.5)}
             >
               <RotateCcw className="h-4 w-4" />
             </Button>

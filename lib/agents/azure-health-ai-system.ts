@@ -235,9 +235,9 @@ ${fullText}
 
 重要要求：
 1. 只返回纯JSON，不包含markdown代码块或解释文字
-2. 只提取文本中实际存在的指标，不要凭空添加
+2. 只提取文本中实际存在的指标，不要凭空添加。你应该正确地拆分 ocr 识别的文本，因为有可能单位和数值是连在一起的。
 3. 指标名称保持原文格式（包括中英文、括号等）
-4. 如果某项信息在文本中不存在，该字段填写"未提供"
+4. 如果某项信息在文本中不存在，需要根据你的经验提供中国地区的相关标准。
 5. 直接以{开始，以}结束
 `;
 
@@ -356,13 +356,18 @@ ${JSON.stringify(indicators, null, 2)}
 4. 风险评估要基于实际指标，不夸大不轻视
 5. 使用通俗易懂的语言，专业但不失温度
 6. 只返回JSON格式，不要其他内容
+7. 对于单位或正常范围为"未提供"的指标，请根据医学知识库补充：
+   - 视力正常范围：4.9-5.3（标准对数视力表）
+   - 血液指标单位：血细胞计数用10E9/L或10E12/L，血红蛋白用g/L等
+   - 根据指标名称推断合理的正常范围和单位
+8. 优先分析有明确数值和范围的指标，对无法判断的指标标注"无法评估"
 `;
 
     try {
       const response = await this.callAzureOpenAI([
         { role: 'system', content: '你是一位专业的全科医生，擅长解读体检报告并给出通俗易懂的健康建议。' },
         { role: 'user', content: prompt }
-      ], 'gpt-4', 4000);
+      ], 'gpt-4.1', 4000);
       
       // 清理AI响应，提取JSON部分
       let cleanedResponse = response.trim();
@@ -432,7 +437,7 @@ ${JSON.stringify(indicators, null, 2)}
     ];
 
     try {
-      return await this.callAzureOpenAI(messages, 'gpt-35-turbo', 1500);
+      return await this.callAzureOpenAI(messages, 'gpt-4.1', 1500);
     } catch (error) {
       console.error('健康问答失败:', error);
       return '抱歉，我现在无法回答您的问题，请稍后再试。如果是紧急情况，请及时就医。';
