@@ -18,8 +18,7 @@ interface TestResult {
 
 export default function AzureAITestPage() {
   const [testResults, setTestResults] = useState<TestResult[]>([
-    { name: 'Azure OpenAI 连接测试', status: 'pending' },
-    { name: 'Azure Computer Vision 连接测试', status: 'pending' },
+    { name: 'Vision 连接测试', status: 'pending' },
     { name: '健康指标解析测试', status: 'pending' },
     { name: '健康分析测试', status: 'pending' },
     { name: '健康问答测试', status: 'pending' }

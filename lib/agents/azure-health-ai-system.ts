@@ -94,6 +94,7 @@ class AzureHealthAISystem {
           ? this.azureVisionEndpoint.slice(0, -1) 
           : this.azureVisionEndpoint;
 
+        // 【调用场景：体检报告图片OCR文字识别】+【Azure Computer Vision Read API图像文字提取】
         const response = await fetch(
           `${endpoint}/vision/v3.2/read/analyze`,
           {
@@ -202,6 +203,7 @@ class AzureHealthAISystem {
       throw new Error('文本内容过短，无法进行有效解析');
     }
     
+    // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【Azure OpenAI Chat Completions API - GPT-4模型智能解析】
     const prompt = `
 请从以下体检报告文本中识别并提取所有实际存在的健康指标数据。
 
@@ -242,6 +244,7 @@ ${fullText}
 `;
 
     try {
+      // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【Azure OpenAI Chat Completions API - GPT-4模型智能解析】
       const response = await this.callAzureOpenAI([
         { role: 'user', content: prompt }
       ], 'gpt-4', 3000);
@@ -309,22 +312,38 @@ ${fullText}
       };
     }
 
-    const prompt = `
-你是一位经验丰富的全科医生，请根据以下体检数据提供专业分析：
+    // 导入用户上下文构建器
+    const { getUserContextString } = await import('@/lib/utils/user-context-builder');
+    const userContext = getUserContextString(userProfile, 'analysis');
+    
+    console.log('👤 [AzureHealthAI] analyzeHealthData 用户档案:', userProfile ? '已提供' : '未提供');
+    console.log('🔍 [AzureHealthAI] analyzeHealthData 处理后的用户上下文:', userContext);
 
-用户信息：
-- 年龄：${userProfile.age || '未知'}岁
-- 性别：${userProfile.gender || '未知'}
-- 既往病史：${userProfile.medicalHistory || '无'}
+    // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【Azure OpenAI Chat Completions API - GPT-4.1模型医学专业分析】
+    let prompt = `你是一位经验丰富的全科医生，擅长解读体检报告并给出通俗易懂的健康建议。
+
+请根据以下体检数据提供专业分析：
 
 体检指标：
-${JSON.stringify(indicators, null, 2)}
+${JSON.stringify(indicators, null, 2)}`;
+
+    // 只在有用户信息时添加用户上下文
+    if (userContext && userContext !== '暂无详细健康档案信息') {
+      prompt += `
+
+用户健康档案：
+${userContext}
+
+请结合用户的个人情况进行个性化分析，特别关注与用户现有健康状况相关的指标。`;
+    }
+
+    prompt += `
 
 请按以下JSON格式返回专业分析：
 {
   "overallStatus": "优秀/良好/注意/建议就医",
-  "healthScore": 85,
-  "summary": "整体健康状况简要总结",
+  "healthScore": 你综合用户的情况得出的评分,
+  "summary": "整体健康状况分点详细介绍，但不要超过 500 字",
   "abnormalIndicators": [
     {
       "name": "指标名称",
@@ -361,12 +380,13 @@ ${JSON.stringify(indicators, null, 2)}
    - 血液指标单位：血细胞计数用10E9/L或10E12/L，血红蛋白用g/L等
    - 根据指标名称推断合理的正常范围和单位
 8. 优先分析有明确数值和范围的指标，对无法判断的指标标注"无法评估"
-`;
+
+现在开始分析体检数据，直接返回JSON格式的分析结果。`;
 
     try {
+      // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【Azure OpenAI Chat Completions API - GPT-4.1模型医学专业分析】
       const response = await this.callAzureOpenAI([
-        { role: 'system', content: '你是一位专业的全科医生，擅长解读体检报告并给出通俗易懂的健康建议。' },
-        { role: 'user', content: prompt }
+        { role: 'system', content: prompt }
       ], 'gpt-4.1', 4000);
       
       // 清理AI响应，提取JSON部分
@@ -413,22 +433,37 @@ ${JSON.stringify(indicators, null, 2)}
 
   // Agent 4: Azure OpenAI 健康问答
   async healthChat(question: string, userContext: any, chatHistory: any[] = []): Promise<string> {
-    const systemPrompt = `
-你是一位专业的健康咨询AI助手，基于用户的健康档案回答问题。
+    console.log('🤖 [AzureHealthAI] 开始健康问答处理');
+    console.log('📝 [AzureHealthAI] 用户问题:', question);
+    console.log('👤 [AzureHealthAI] 用户上下文:', userContext ? '已提供' : '未提供');
+    
+    // 导入用户上下文构建器
+    const { getUserContextString } = await import('@/lib/utils/user-context-builder');
+    const userContextString = getUserContextString(userContext, 'chat');
+    console.log('🔍 [AzureHealthAI] 处理后的用户上下文:', userContextString);
 
-用户健康背景：
-- 年龄：${userContext.age || '未知'}岁
-- 性别：${userContext.gender || '未知'}
-- 最近体检状况：${userContext.latestHealthStatus || '暂无数据'}
-- 既往病史：${userContext.medicalHistory || '无'}
+    // 【调用场景：健康问答对话和指标解读互动】+【Azure OpenAI Chat Completions API - GPT-4.1模型智能问答】
+    let systemPrompt = `你是一位专业的健康咨询AI助手，为用户提供个性化的健康建议。
 
 回答原则：
 1. 基于用户具体情况给出个性化建议
-2. 使用通俗易懂的语言
+2. 使用通俗易懂的语言，避免过多医学术语
 3. 涉及严重症状时建议就医
 4. 不能替代专业医疗诊断
-5. 保持客观和谨慎
-`;
+5. 保持客观和谨慎的态度
+6. 回答要简洁明了，控制在200-400字以内
+7. 提供实用的生活建议和改善措施
+8. 如果是健康指标解读，要说明指标含义、当前状态和关注建议`;
+
+    // 只在有用户信息时添加用户背景
+    if (userContextString && userContextString !== '新用户') {
+      systemPrompt += `\n\n用户基本情况：${userContextString}
+请结合用户的实际情况给出针对性的建议，特别关注与用户年龄、性别、既往病史相关的健康风险。`;
+      console.log('✅ [AzureHealthAI] 已添加个性化用户背景');
+    } else {
+      systemPrompt += `\n\n当前用户尚未完善健康档案，请提供通用的健康建议。`;
+      console.log('ℹ️ [AzureHealthAI] 使用通用健康建议模式');
+    }
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -436,10 +471,17 @@ ${JSON.stringify(indicators, null, 2)}
       { role: 'user', content: question }
     ];
 
+    console.log('📤 [AzureHealthAI] 准备发送到Azure OpenAI，消息数量:', messages.length);
+    console.log('🎯 [AzureHealthAI] 系统提示词长度:', systemPrompt.length);
+
     try {
-      return await this.callAzureOpenAI(messages, 'gpt-4.1', 1500);
+      // 【调用场景：健康问答对话和指标解读互动】+【Azure OpenAI Chat Completions API - GPT-4.1模型智能问答】
+      const response = await this.callAzureOpenAI(messages, 'gpt-4.1', 1500);
+      console.log('✅ [AzureHealthAI] 健康问答成功，响应长度:', response.length);
+      console.log('📋 [AzureHealthAI] AI响应预览:', response.substring(0, 100) + '...');
+      return response;
     } catch (error) {
-      console.error('健康问答失败:', error);
+      console.error('❌ [AzureHealthAI] 健康问答失败:', error);
       return '抱歉，我现在无法回答您的问题，请稍后再试。如果是紧急情况，请及时就医。';
     }
   }
@@ -493,6 +535,7 @@ ${JSON.stringify(indicators, null, 2)}
           ? this.azureOpenAIEndpoint.slice(0, -1) 
           : this.azureOpenAIEndpoint;
         
+        // 【调用场景：Azure OpenAI API底层调用封装】+【Azure OpenAI Chat Completions REST API接口】
         const response = await fetch(
           `${endpoint}/openai/deployments/${this.azureOpenAIDeployment}/chat/completions?api-version=${this.azureOpenAIVersion}`,
           {

@@ -23,6 +23,7 @@ interface AIFloatingDialogProps {
   initialContext?: {
     indicator?: any
     question?: string
+    userProfile?: any
   }
   onAIQuery?: (question: string, context?: any) => Promise<string>
 }
@@ -38,6 +39,7 @@ export default function AIFloatingDialog({
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [floatingPosition, setFloatingPosition] = useState(position)
+  const [userProfile, setUserProfile] = useState<any>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [azureAI] = useState(() => new AzureHealthAISystem({
@@ -49,9 +51,45 @@ export default function AIFloatingDialog({
     azureVisionKey: process.env.NEXT_PUBLIC_AZURE_VISION_KEY || ''
   }))
 
+  // 获取用户档案
+  const getUserProfile = async () => {
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      return profile
+    } catch (error) {
+      console.error('获取用户档案失败:', error)
+      return null
+    }
+  }
+
+  // 初始化时获取用户档案
+  useEffect(() => {
+    const initUserProfile = async () => {
+      if (isOpen) {
+        console.log('🔍 [AIFloatingDialog] 初始化用户档案...')
+        const profile = await getUserProfile()
+        setUserProfile(profile)
+        console.log('👤 [AIFloatingDialog] 用户档案获取完成:', profile ? '已获取' : '未获取')
+      }
+    }
+    initUserProfile()
+  }, [isOpen])
+
   // 使用Azure AI生成解读
   const generateAIAnalysis = async (context: any): Promise<string> => {
     try {
+      console.log('🔍 [AIFloatingDialog] 开始生成AI解读:', context);
+      
       // 检查是否是数值类型的健康指标
       if (context.value !== undefined && context.name) {
         // 数值类型指标，构建健康指标对象
@@ -79,14 +117,14 @@ export default function AIFloatingDialog({
 
 请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
         
-        const userContext = {
-          age: 30,
-          gender: '未知',
-          latestHealthStatus: `${healthIndicator.name}: ${healthIndicator.value}${healthIndicator.unit}`,
-          medicalHistory: '无'
-        }
+        // 【调用场景：浮窗对话中的健康指标智能解读】+【Azure OpenAI Chat Completions API - 对话式指标分析】
+        // 使用获取到的用户档案
+        console.log('📤 [AIFloatingDialog] 发送健康指标解读请求到Azure AI');
+        console.log('👤 [AIFloatingDialog] 使用用户档案:', userProfile ? '已获取' : '未获取');
         
-        return await azureAI.healthChat(question, userContext)
+        const response = await azureAI.healthChat(question, userProfile);
+        console.log('✅ [AIFloatingDialog] 健康指标解读完成，响应长度:', response.length);
+        return response;
       } else if (typeof context === 'string') {
         // 文字解读信息，直接使用AI分析
         const question = `请帮我分析这个健康检查结果：${context}。
@@ -104,14 +142,13 @@ export default function AIFloatingDialog({
 
 请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
         
-        const userContext = {
-          age: 30,
-          gender: '未知',
-          latestHealthStatus: context,
-          medicalHistory: '无'
-        }
+        // 【调用场景：浮窗对话中的文字解读分析】+【Azure OpenAI Chat Completions API - 文本内容智能分析】
+        console.log('📤 [AIFloatingDialog] 发送文字解读请求到Azure AI');
+        console.log('👤 [AIFloatingDialog] 使用用户档案:', userProfile ? '已获取' : '未获取');
         
-        return await azureAI.healthChat(question, userContext)
+        const response = await azureAI.healthChat(question, userProfile);
+        console.log('✅ [AIFloatingDialog] 文字解读完成，响应长度:', response.length);
+        return response;
       } else if (context.description || context.result) {
         // 对象包含描述或结果字段
         const analysisText = context.description || context.result || JSON.stringify(context)
@@ -130,14 +167,13 @@ export default function AIFloatingDialog({
 
 请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
         
-        const userContext = {
-          age: 30,
-          gender: '未知',
-          latestHealthStatus: analysisText,
-          medicalHistory: '无'
-        }
+        // 【调用场景：浮窗对话中的对象数据解读】+【Azure OpenAI Chat Completions API - 结构化数据智能解析】
+        console.log('📤 [AIFloatingDialog] 发送对象解读请求到Azure AI');
+        console.log('👤 [AIFloatingDialog] 使用用户档案:', userProfile ? '已获取' : '未获取');
         
-        return await azureAI.healthChat(question, userContext)
+        const response = await azureAI.healthChat(question, userProfile);
+        console.log('✅ [AIFloatingDialog] 对象解读完成，响应长度:', response.length);
+        return response;
       } else {
         // 降级到本地分析
         return generateBasicAnalysis(context)
@@ -356,30 +392,25 @@ export default function AIFloatingDialog({
     setIsLoading(true)
 
     try {
+      console.log('💬 [AIFloatingDialog] 处理用户消息:', messageToSend);
+      
       // 优先使用内置AI服务
       let aiResponse: string
       
       if (onAIQuery) {
         // 如果有外部AI查询函数，使用它
+        console.log('🔄 [AIFloatingDialog] 使用外部AI查询函数');
         aiResponse = await onAIQuery(messageToSend, initialContext)
       } else {
-        // 使用Azure AI服务
-        const userContext = initialContext?.indicator ? {
-          age: 30,
-          gender: '未知',
-          latestHealthStatus: initialContext.indicator.name ? 
-            `${initialContext.indicator.name}: ${initialContext.indicator.value || ''}${initialContext.indicator.unit || ''}` :
-            JSON.stringify(initialContext.indicator),
-          medicalHistory: '无'
-        } : {
-          age: 30,
-          gender: '未知',
-          latestHealthStatus: '无',
-          medicalHistory: '无'
-        }
+        // 【调用场景：浮窗对话中的用户自由提问交互】+【Azure OpenAI Chat Completions API - 开放式健康问答】
+        // 使用获取到的用户档案
+        console.log('🤖 [AIFloatingDialog] 使用内置Azure AI服务');
+        console.log('👤 [AIFloatingDialog] 使用用户档案:', userProfile ? '已获取' : '未获取');
         
-        aiResponse = await azureAI.healthChat(messageToSend, userContext)
+        aiResponse = await azureAI.healthChat(messageToSend, userProfile)
       }
+      
+      console.log('✅ [AIFloatingDialog] AI回复成功，长度:', aiResponse.length);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),

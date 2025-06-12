@@ -140,7 +140,7 @@ export default function EnhancedOCRResultPanel({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-ocr-panel>
       {/* 统计概览 */}
       <Card>
         <CardHeader>

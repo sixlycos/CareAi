@@ -6,7 +6,7 @@ import { ProcessingStep, OCRResult } from '../types'
 export function useOCRProcessing() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([
-    { name: 'Azure OCR文本提取', status: 'pending', progress: 0 }
+    { name: 'OCR文本提取', status: 'pending', progress: 0 }
   ])
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
   const [enhancedOCRResult, setEnhancedOCRResult] = useState<ParsedOCRResult | null>(null)
@@ -39,7 +39,7 @@ export function useOCRProcessing() {
 
     try {
       // Step 1: Azure OCR文本提取
-      updateStep(0, 'processing', '正在连接Azure Computer Vision...', 10)
+      updateStep(0, 'processing', 'x正在连接Vision...', 10)
       
       let ocrResponse: { extractedText: string[], parsedResult?: any }
       try {
@@ -87,7 +87,7 @@ export function useOCRProcessing() {
     setEnhancedOCRResult(null)
     setOcrCompleted(false)
     setError(null)
-    setProcessingSteps([{ name: 'Azure OCR文本提取', status: 'pending', progress: 0 }])
+    setProcessingSteps([{ name: 'OCR文本提取', status: 'pending', progress: 0 }])
   }
 
   return {

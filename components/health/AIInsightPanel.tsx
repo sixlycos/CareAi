@@ -119,6 +119,7 @@ export default function AIInsightPanel({ indicators, azureAI, isVisible }: AIIns
 - 状态：${indicator.status === 'normal' ? '正常' : indicator.status === 'high' ? '偏高' : indicator.status === 'low' ? '偏低' : '异常'}
 `
 
+      // 【调用场景：健康指标个性化解读和咨询服务】+【Azure OpenAI Chat Completions API - 基于用户档案的智能解读】
       const explainPrompt = `${contextInfo}
 
 请基于以上用户信息和检查指标，提供个性化的健康解读。
@@ -136,10 +137,15 @@ export default function AIInsightPanel({ indicators, azureAI, isVisible }: AIIns
 
 请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
 
-      const explanation = await azureAI.healthChat(explainPrompt, {
-        indicator,
-        userProfile
-      })
+      // 将简化的userProfile转换为完整的用户档案格式，或传递null
+      const fullUserProfile = userProfile.completed ? {
+        age: userProfile.age,
+        gender: userProfile.gender,
+        medical_history: userProfile.medicalHistory || []
+      } : null;
+
+      // 【调用场景：健康指标个性化解读和咨询服务】+【Azure OpenAI Chat Completions API - 基于用户档案的智能解读】
+      const explanation = await azureAI.healthChat(explainPrompt, fullUserProfile)
 
       setCurrentExplanation(explanation)
 

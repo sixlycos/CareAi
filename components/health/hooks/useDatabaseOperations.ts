@@ -108,6 +108,56 @@ export function useDatabaseOperations() {
 
       console.log('✅ 分析结果保存成功:', reportAnalysis.id)
 
+      // 【关键修复】保存健康指标到 health_metrics 表
+      if (analysisResult.indicators && Array.isArray(analysisResult.indicators)) {
+        console.log('💾 开始保存健康指标到 health_metrics 表...')
+        let savedCount = 0
+        
+        for (const indicator of analysisResult.indicators) {
+          try {
+            // 解析数值 - 确保是数字类型
+            let numericValue: number
+            if (typeof indicator.value === 'string') {
+              // 移除可能的非数字字符，只保留数字和小数点
+              const cleanValue = indicator.value.replace(/[^\d.-]/g, '')
+              numericValue = parseFloat(cleanValue)
+            } else {
+              numericValue = Number(indicator.value)
+            }
+
+            // 如果无法解析为有效数字，跳过这个指标
+            if (isNaN(numericValue)) {
+              console.warn(`⚠️ 指标 ${indicator.name} 的值 "${indicator.value}" 无法解析为数字，跳过保存`)
+              continue
+            }
+
+            await healthDB.createHealthMetric({
+              user_id: userId,
+              metric_type: indicator.name,
+              value: numericValue,
+              unit: indicator.unit || '',
+              measurement_date: new Date().toISOString().split('T')[0], // 今天的日期
+              source: 'report',
+              metadata: {
+                reportId: reportId,
+                normalRange: indicator.normalRange,
+                status: indicator.status,
+                analysisDate: new Date().toISOString()
+              }
+            })
+            
+            savedCount++
+            console.log(`✅ 指标 ${indicator.name} 保存成功`)
+            
+          } catch (metricError) {
+            console.error(`❌ 保存指标 ${indicator.name} 失败:`, metricError)
+            // 继续保存其他指标，不中断整个过程
+          }
+        }
+        
+        console.log(`✅ 成功保存 ${savedCount}/${analysisResult.indicators.length} 个健康指标到 health_metrics 表`)
+      }
+
       // 更新健康报告状态为已完成
       await healthDB.updateHealthReportStatus(reportId, 'completed')
 

@@ -21,6 +21,7 @@ import HealthChatPanel from './HealthChatPanel'
 import EnhancedOCRResultPanel from './EnhancedOCRResultPanel'
 import HealthIndicatorCard from './HealthIndicatorCard'
 import AIFloatingDialog from './AIFloatingDialog'
+import RecommendationCard from './RecommendationCard'
 
 export default function ReportUpload() {
   const [file, setFile] = useState<File | null>(null)
@@ -40,9 +41,9 @@ export default function ReportUpload() {
 
   // 使用自定义hooks
   const ocrProcessing = useOCRProcessing()
-  const aiAnalysis = useAIAnalysis(ocrProcessing.azureAI)
-  const aiExplain = useAIExplain(ocrProcessing.azureAI)
   const dbOperations = useDatabaseOperations()
+  const aiAnalysis = useAIAnalysis(ocrProcessing.azureAI, dbOperations)
+  const aiExplain = useAIExplain(ocrProcessing.azureAI)
 
   // 获取当前用户ID
   useEffect(() => {
@@ -86,32 +87,15 @@ export default function ReportUpload() {
   }, [ocrProcessing.ocrCompleted, ocrProcessing.ocrResult, file, userId, currentReportId])
 
   const handleAIAnalysis = () => {
-    if (ocrProcessing.ocrResult?.extractedText) {
-      aiAnalysis.processAIAnalysis(ocrProcessing.ocrResult.extractedText)
+    if (ocrProcessing.ocrResult?.extractedText && currentReportId) {
+      aiAnalysis.processAIAnalysis(ocrProcessing.ocrResult.extractedText, currentReportId)
+    } else {
+      console.error('❌ 无法开始AI分析：缺少OCR数据或报告ID')
     }
   }
 
-  // 监听AI分析完成状态，自动保存分析结果到数据库
-  useEffect(() => {
-    const saveAnalysisResult = async () => {
-      if (aiAnalysis.result && userId && currentReportId) {
-        console.log('🔄 保存AI分析结果到数据库...')
-        const success = await dbOperations.saveAnalysisResult(
-          userId,
-          currentReportId,
-          aiAnalysis.result
-        )
-        
-        if (success) {
-          console.log('✅ AI分析结果已保存到数据库')
-        } else {
-          console.error('❌ 保存AI分析结果失败:', dbOperations.saveError)
-        }
-      }
-    }
-
-    saveAnalysisResult()
-  }, [aiAnalysis.result, userId, currentReportId])
+  // 注意：AI分析完成后的数据库保存现在由useAIAnalysis内部处理
+  // 这里不再需要额外的保存逻辑，避免重复保存
 
   const handleReanalyze = () => {
     if (ocrProcessing.ocrResult) {
@@ -145,44 +129,67 @@ export default function ReportUpload() {
     })
   }
 
+  // 获取用户档案
+  const getUserProfile = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      return profile
+    } catch (error) {
+      console.error('获取用户档案失败:', error)
+      return null
+    }
+  }
+
   // AI查询处理
   const handleAIQuery = async (question: string, context?: any): Promise<string> => {
     try {
-      let aiResponse = ''
+      console.log('🤖 [ReportUpload] 开始AI查询:', { question, context });
       
-      // 这里可以集成真实的AI API
-      if (context?.indicator) {
-        aiResponse = `关于${context.indicator.name}指标的分析：
-
-检测值：${context.indicator.value}${context.indicator.unit || ''}
-参考范围：${context.indicator.referenceRange || '未知'}
-
-${question.includes('正常') ? '这个指标的数值' + (context.indicator.status === 'normal' ? '在' : '不在') + '正常范围内。' : ''}
-
-建议：
-• 定期复查该指标
-• 保持健康的生活方式
-• 如有疑问请咨询医生
-
-还有其他想了解的吗？`
-      } else {
-        aiResponse = `您的问题很有价值。基于您的健康报告分析，我建议您关注以下几点：
-
-1. 维持当前的健康状态
-2. 定期进行健康检查
-3. 保持均衡饮食和适量运动
-
-如需更详细的建议，建议咨询专业医生。`
+      // 使用真实的Azure AI服务
+      if (!ocrProcessing.azureAI) {
+        console.error('❌ [ReportUpload] Azure AI 服务未初始化');
+        return '抱歉，AI服务暂时不可用，请稍后再试。';
       }
+
+      // 获取用户档案
+      const userProfile = await getUserProfile();
+      console.log('👤 [ReportUpload] 用户档案:', userProfile ? '已获取' : '未获取');
+
+      let aiResponse = '';
+      
+      if (context?.indicator) {
+        // 【调用场景：针对特定健康指标的问答咨询】+【Azure OpenAI Chat Completions API - 指标相关专业解答】
+        // 针对特定健康指标的查询
+        console.log('📊 [ReportUpload] 处理健康指标查询:', context.indicator.name);
+        aiResponse = await ocrProcessing.azureAI.healthChat(question, userProfile, []);
+      } else {
+        // 【调用场景：一般健康问题咨询和建议】+【Azure OpenAI Chat Completions API - 通用健康咨询服务】
+        // 一般健康咨询
+        console.log('💬 [ReportUpload] 处理一般健康咨询');
+        aiResponse = await ocrProcessing.azureAI.healthChat(question, userProfile, []);
+      }
+
+      console.log('✅ [ReportUpload] AI查询成功，响应长度:', aiResponse.length);
 
       // 保存AI咨询记录到数据库
       if (userId) {
-        await dbOperations.saveAIConsultation(userId, question, aiResponse, context)
+        await dbOperations.saveAIConsultation(userId, question, aiResponse, context);
+        console.log('💾 [ReportUpload] AI咨询记录已保存');
       }
       
-      return aiResponse
+      return aiResponse;
     } catch (error) {
-      return '抱歉，我暂时无法处理您的请求，请稍后再试。'
+      console.error('❌ [ReportUpload] AI查询失败:', error);
+      return '抱歉，我暂时无法处理您的请求，请稍后再试。如果是紧急情况，请及时就医。';
     }
   }
 
@@ -375,6 +382,14 @@ ${question.includes('正常') ? '这个指标的数值' + (context.indicator.sta
                 </div>
               </CardContent>
             </Card>
+
+            {/* AI个性化健康建议 */}
+            {aiAnalysis.result.recommendations && (
+              <RecommendationCard 
+                recommendations={aiAnalysis.result.recommendations}
+                className="border-green-200 dark:border-green-800"
+              />
+            )}
 
             {/* 健康指标卡片 */}
             {aiAnalysis.extractedIndicators.length > 0 && (

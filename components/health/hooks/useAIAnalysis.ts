@@ -2,7 +2,7 @@ import { useState } from 'react'
 import AzureHealthAISystem, { type AnalysisResult, type HealthIndicator } from '@/lib/agents/azure-health-ai-system'
 import { ProcessingStep } from '../types'
 
-export function useAIAnalysis(azureAI: AzureHealthAISystem) {
+export function useAIAnalysis(azureAI: AzureHealthAISystem, dbOperations?: any) {
   const [isAIAnalyzing, setIsAIAnalyzing] = useState(false)
   const [isReanalyzing, setIsReanalyzing] = useState(false)
   const [aiAnalysisSteps, setAiAnalysisSteps] = useState<ProcessingStep[]>([
@@ -23,7 +23,28 @@ export function useAIAnalysis(azureAI: AzureHealthAISystem) {
     )
   }
 
-  const processAIAnalysis = async (extractedText: string[]) => {
+  // 获取用户档案
+  const getUserProfile = async () => {
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      return profile
+    } catch (error) {
+      console.error('获取用户档案失败:', error)
+      return null
+    }
+  }
+
+  const processAIAnalysis = async (extractedText: string[], reportId?: string) => {
     if (!extractedText || extractedText.length === 0) {
       setError('没有OCR数据，请先上传并处理图片')
       return
@@ -38,12 +59,10 @@ export function useAIAnalysis(azureAI: AzureHealthAISystem) {
     setAiAnalysisSteps(steps => steps.map(step => ({ ...step, status: 'pending' as const, progress: 0 })))
 
     try {
-      // 用户配置文件（后续可以从用户设置中获取）
-      const userProfile = {
-        age: 35,
-        gender: '男',
-        medicalHistory: '无'
-      }
+      // 获取真实的用户档案
+      console.log('👤 [useAIAnalysis] 获取用户档案...')
+      const userProfile = await getUserProfile()
+      console.log('👤 [useAIAnalysis] 用户档案获取完成:', userProfile ? '已获取' : '未获取')
 
       // Step 1: 健康指标解析
       updateAIStep(0, 'processing', '正在使用AI解析健康指标...', 20)
@@ -88,9 +107,41 @@ export function useAIAnalysis(azureAI: AzureHealthAISystem) {
       updateAIStep(2, 'completed', '智能报告生成完成', 100)
 
       // Step 4: 保存数据到数据库
-      updateAIStep(3, 'processing', '正在保存数据...', 50)
-      // TODO: 实现数据库保存逻辑
-      updateAIStep(3, 'completed', '数据保存完成', 100)
+      updateAIStep(3, 'processing', '正在保存数据...', 30)
+      
+      try {
+        // 获取当前用户ID
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user && dbOperations && reportId) {
+          updateAIStep(3, 'processing', '正在保存健康指标到数据库...', 60)
+          
+          // 构建分析结果数据，包含所有指标信息
+          const analysisResultWithIndicators = {
+            ...analysis,
+            indicators: indicators // 确保包含解析出的指标数据
+          }
+          
+          // 保存分析结果和健康指标
+          const saveResult = await dbOperations.saveAnalysisResult(user.id, reportId, analysisResultWithIndicators)
+          
+          if (saveResult) {
+            updateAIStep(3, 'completed', '数据保存完成', 100)
+            console.log('✅ [useAIAnalysis] 健康指标和分析结果已保存到数据库')
+          } else {
+            updateAIStep(3, 'error', '数据保存失败')
+            console.error('❌ [useAIAnalysis] 保存数据到数据库失败')
+          }
+        } else {
+          updateAIStep(3, 'completed', '跳过数据保存（缺少必要参数）', 100)
+          console.log('ℹ️ [useAIAnalysis] 跳过数据保存：用户未登录或缺少数据库操作对象')
+        }
+      } catch (saveError) {
+        updateAIStep(3, 'error', `保存失败: ${saveError instanceof Error ? saveError.message : '未知错误'}`)
+        console.error('❌ [useAIAnalysis] 保存数据过程中出错:', saveError)
+      }
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '未知错误'
@@ -113,7 +164,9 @@ export function useAIAnalysis(azureAI: AzureHealthAISystem) {
       // 如果有分析结果，也重新分析
       if (result) {
         console.log('🤖 重新进行AI分析...')
-        const userProfile = { age: 35, gender: '男', medicalHistory: '无' }
+        console.log('👤 [useAIAnalysis] 重新分析时获取用户档案...')
+        const userProfile = await getUserProfile()
+        console.log('👤 [useAIAnalysis] 重新分析用户档案获取完成:', userProfile ? '已获取' : '未获取')
         const newAnalysis = await azureAI.analyzeHealthData(indicators, userProfile)
         setResult(newAnalysis)
       }

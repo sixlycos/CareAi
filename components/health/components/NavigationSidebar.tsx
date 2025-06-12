@@ -29,12 +29,28 @@ export function NavigationSidebar({
   onToggleAiExplainMode
 }: NavigationSidebarProps) {
   const scrollToElement = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    // 特殊处理OCR结果跳转
+    if (id === 'ocr-results') {
+      const ocrElement = document.getElementById('ocr-results')
+      if (ocrElement) {
+        // 如果OCR结果区域存在，直接跳转
+        ocrElement.scrollIntoView({ behavior: 'smooth' })
+      } else {
+        // 如果OCR结果区域不存在，可能是被隐藏了，尝试滚动到增强OCR结果面板
+        const enhancedOcrElement = document.querySelector('[data-ocr-panel]')
+        if (enhancedOcrElement) {
+          enhancedOcrElement.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
+    } else {
+      // 其他元素正常跳转
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    }
   }
 
   return (
     <div className="fixed left-6 top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border p-2 space-y-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border p-2 space-y-2 w-fit">
         <div className="text-xs text-gray-500 text-center mb-2">快速导航</div>
         
         {/* 上传区域 */}
@@ -118,49 +134,10 @@ export function NavigationSidebar({
             {/* AI解读模式状态提示 */}
             {aiExplainMode && (
               <div className="mt-1 text-center">
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium whitespace-nowrap">
                   <Brain className="h-3 w-3" />
                   AI解读已启用
                 </span>
-              </div>
-            )}
-
-            {/* 解读内容预览 */}
-            {aiExplainMode && (
-              <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                <div className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">
-                  AI智能解读
-                </div>
-                
-                {selectedIndicator ? (
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                      {selectedIndicator.name}
-                    </div>
-                    {isExplaining ? (
-                      <div className="flex items-center gap-1">
-                        <div className="h-2 w-2 border border-purple-500 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs text-gray-500">解读中...</span>
-                      </div>
-                    ) : indicatorExplanation ? (
-                      <button 
-                        onClick={() => {
-                          // 显示完整解读的弹窗
-                          alert(indicatorExplanation) // 临时用alert，后续可以用更好的模态框
-                        }}
-                        className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 text-left hover:text-purple-600 transition-colors"
-                      >
-                        {indicatorExplanation.substring(0, 50)}...
-                        <div className="text-purple-500 mt-1">点击查看完整解读</div>
-                      </button>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center p-2 border border-dashed border-purple-300 dark:border-purple-700 rounded">
-                    <Brain className="h-4 w-4 mx-auto mb-1 text-purple-400" />
-                    点击指标卡片获取AI解读
-                  </div>
-                )}
               </div>
             )}
           </div>

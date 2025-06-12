@@ -70,13 +70,8 @@ export default function HealthChatPanel({
 
     try {
       // 构建用户上下文
-      const userContext = {
-        ...userProfile,
-        latestHealthStatus: analysisResult.overallStatus,
-        healthScore: analysisResult.healthScore,
-        abnormalIndicators: analysisResult.abnormalIndicators,
-        recommendations: analysisResult.recommendations
-      }
+      // 构建用户上下文，直接传递用户档案
+      const userContext = userProfile
 
       // 获取聊天历史（最近6条消息）
       const chatHistory = messages.slice(-6).map(msg => ({
