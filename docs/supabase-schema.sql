@@ -14,6 +14,33 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
+    -- 基础信息
+    age INTEGER NULL CHECK (age >= 0 AND age <= 100),
+    gender TEXT NULL,
+    height VARCHAR(50) NULL,
+    weight VARCHAR(50) NULL,
+    
+    -- 健康背景
+    medical_history JSONB NULL DEFAULT '[]',
+    family_history JSONB NULL DEFAULT '[]',
+    medications TEXT NULL,
+    allergies TEXT NULL,
+    
+    -- 生活习惯
+    exercise_frequency VARCHAR(100) NULL,
+    smoking_status VARCHAR(50) NULL,
+    drinking_status VARCHAR(50) NULL,
+    sleep_hours VARCHAR(20) NULL,
+    stress_level VARCHAR(50) NULL,
+    
+    -- 健康目标
+    health_goals JSONB NULL DEFAULT '[]',
+    target_weight VARCHAR(50) NULL,
+    other_goals TEXT NULL,
+    
+    -- 档案完成状态
+    profile_completed BOOLEAN DEFAULT false,
+    
     -- 确保每个用户只有一个档案
     UNIQUE(user_id)
 );

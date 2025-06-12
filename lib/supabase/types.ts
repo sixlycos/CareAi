@@ -12,6 +12,28 @@ export interface Database {
           preferences: Record<string, any> | null
           created_at: string
           updated_at: string
+          // 基础信息
+          age: number | null
+          gender: string | null
+          height: string | null
+          weight: string | null
+          // 健康背景
+          medical_history: string[] | null
+          family_history: string[] | null
+          medications: string | null
+          allergies: string | null
+          // 生活习惯
+          exercise_frequency: string | null
+          smoking_status: string | null
+          drinking_status: string | null
+          sleep_hours: string | null
+          stress_level: string | null
+          // 健康目标
+          health_goals: string[] | null
+          target_weight: string | null
+          other_goals: string | null
+          // 档案完成状态
+          profile_completed: boolean | null
         }
         Insert: {
           id?: string
@@ -23,6 +45,28 @@ export interface Database {
           preferences?: Record<string, any> | null
           created_at?: string
           updated_at?: string
+          // 基础信息
+          age?: number | null
+          gender?: string | null
+          height?: string | null
+          weight?: string | null
+          // 健康背景
+          medical_history?: string[] | null
+          family_history?: string[] | null
+          medications?: string | null
+          allergies?: string | null
+          // 生活习惯
+          exercise_frequency?: string | null
+          smoking_status?: string | null
+          drinking_status?: string | null
+          sleep_hours?: string | null
+          stress_level?: string | null
+          // 健康目标
+          health_goals?: string[] | null
+          target_weight?: string | null
+          other_goals?: string | null
+          // 档案完成状态
+          profile_completed?: boolean | null
         }
         Update: {
           id?: string
@@ -33,6 +77,28 @@ export interface Database {
           next_checkup?: string | null
           preferences?: Record<string, any> | null
           updated_at?: string
+          // 基础信息
+          age?: number | null
+          gender?: string | null
+          height?: string | null
+          weight?: string | null
+          // 健康背景
+          medical_history?: string[] | null
+          family_history?: string[] | null
+          medications?: string | null
+          allergies?: string | null
+          // 生活习惯
+          exercise_frequency?: string | null
+          smoking_status?: string | null
+          drinking_status?: string | null
+          sleep_hours?: string | null
+          stress_level?: string | null
+          // 健康目标
+          health_goals?: string[] | null
+          target_weight?: string | null
+          other_goals?: string | null
+          // 档案完成状态
+          profile_completed?: boolean | null
         }
       }
       health_reports: {

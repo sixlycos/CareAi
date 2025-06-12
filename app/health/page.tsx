@@ -22,6 +22,15 @@ export default async function HealthDashboard() {
     userProfile = await healthDB.createUserProfile(data.user.id);
   }
 
+  // 检查用户是否需要完善档案信息（仅对真正的新用户强制）
+  const isNewUser = !userProfile.age && !userProfile.gender && 
+    !userProfile.preferences?.onboardingCompleted;
+
+  // 只有新用户且未完成任何建档步骤时才强制重定向
+  if (isNewUser) {
+    redirect("/profile/complete");
+  }
+
   const userStats = await healthDB.getUserStats(data.user.id);
 
   return (
@@ -100,7 +109,7 @@ export default async function HealthDashboard() {
         </div>
 
         {/* 新的快捷操作区域 - 卡片样式 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-200">
             <CardContent className="flex items-center p-6">
               <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg mr-4">
@@ -136,6 +145,20 @@ export default async function HealthDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          <a href="/profile/edit">
+            <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-orange-200">
+              <CardContent className="flex items-center p-6">
+                <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-lg mr-4">
+                  <Brain className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">编辑档案</h3>
+                  <p className="text-sm text-muted-foreground">完善健康信息</p>
+                </div>
+              </CardContent>
+            </Card>
+          </a>
         </div>
 
         {/* Main Content - 扩充为全宽 */}

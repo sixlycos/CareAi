@@ -53,6 +53,40 @@ export class HealthDatabase {
     return true
   }
 
+  // 专门用于保存引导信息的方法
+  async saveOnboardingInfo(userId: string, age: number, gender: string, selectedPath: string): Promise<boolean> {
+    const supabase = await createClient()
+    
+    // 确保用户档案存在
+    let userProfile = await this.getUserProfile(userId)
+    if (!userProfile) {
+      userProfile = await this.createUserProfile(userId)
+      if (!userProfile) return false
+    }
+
+    // 更新年龄、性别和引导偏好
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ 
+        age,
+        gender,
+        preferences: {
+          ...userProfile.preferences,
+          selectedPath,
+          onboardingCompleted: true,
+          onboardingDate: new Date().toISOString()
+        },
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+
+    if (error) {
+      console.error('保存引导信息失败:', error)
+      return false
+    }
+    return true
+  }
+
   // 健康报告相关操作
   async createHealthReport(report: Omit<HealthReport, 'id' | 'created_at' | 'updated_at'>): Promise<HealthReport | null> {
     const supabase = await createClient()
