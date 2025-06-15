@@ -16,23 +16,31 @@ interface Message {
   suggestedQuestions?: string[]
 }
 
+interface HealthIndicator {
+  name: string
+  value: number
+  unit: string
+  normalRange: string
+  status: string
+}
+
 interface AIFloatingDialogProps {
   isOpen: boolean
-  onClose: () => void
   position: { x: number; y: number }
-  initialContext?: {
-    indicator?: any
-    question?: string
-    userProfile?: any
+  context?: {
+    indicator?: HealthIndicator
+    explanation?: string
+    title?: string
   }
-  onAIQuery?: (question: string, context?: any) => Promise<string>
+  onClose: () => void
+  onAIQuery?: (question: string, context?: Record<string, unknown>) => Promise<string>
 }
 
 export default function AIFloatingDialog({
   isOpen,
-  onClose,
   position,
-  initialContext,
+  context,
+  onClose,
   onAIQuery
 }: AIFloatingDialogProps) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -271,14 +279,14 @@ export default function AIFloatingDialog({
   // 初始化对话
   useEffect(() => {
     const initializeDialog = async () => {
-      if (isOpen && initialContext) {
-        if (initialContext.indicator) {
+      if (isOpen && context) {
+        if (context.indicator) {
           setIsLoading(true)
           
           try {
             // 使用Azure AI生成基本解读
-            const basicAnalysis = await generateAIAnalysis(initialContext.indicator)
-            const suggestedQuestions = generateSuggestedQuestions(initialContext.indicator)
+            const basicAnalysis = await generateAIAnalysis(context.indicator)
+            const suggestedQuestions = generateSuggestedQuestions(context.indicator)
             
             const analysisMessage: Message = {
               id: Date.now().toString(),
@@ -299,8 +307,8 @@ export default function AIFloatingDialog({
           } catch (error) {
             console.error('AI分析失败:', error)
             // 降级到本地分析
-            const fallbackAnalysis = generateBasicAnalysis(initialContext.indicator)
-            const suggestedQuestions = generateSuggestedQuestions(initialContext.indicator)
+            const fallbackAnalysis = generateBasicAnalysis(context.indicator)
+            const suggestedQuestions = generateSuggestedQuestions(context.indicator)
             
             const analysisMessage: Message = {
               id: Date.now().toString(),
@@ -339,7 +347,7 @@ export default function AIFloatingDialog({
     }
 
     initializeDialog()
-  }, [isOpen, initialContext])
+  }, [isOpen, context])
 
   // 调整浮窗位置避免超出屏幕
   useEffect(() => {
@@ -400,7 +408,7 @@ export default function AIFloatingDialog({
       if (onAIQuery) {
         // 如果有外部AI查询函数，使用它
         console.log('🔄 [AIFloatingDialog] 使用外部AI查询函数');
-        aiResponse = await onAIQuery(messageToSend, initialContext)
+        aiResponse = await onAIQuery(messageToSend, context)
       } else {
         // 【调用场景：浮窗对话中的用户自由提问交互】+【Azure OpenAI Chat Completions API - 开放式健康问答】
         // 使用获取到的用户档案

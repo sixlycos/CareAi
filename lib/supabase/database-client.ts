@@ -1,5 +1,18 @@
 import { createClient } from '@/lib/supabase/client'
-import { Database, UserProfile, HealthReport, ReportAnalysis, AIConsultation, HealthMetric } from './types'
+import { 
+  UserProfile, 
+  HealthReport, 
+  ReportAnalysis, 
+  TCMReport,
+  AIConsultation, 
+  HealthMetric,
+  UserProfileInsert,
+  HealthReportInsert,
+  ReportAnalysisInsert,
+  TCMReportInsert,
+  AIConsultationInsert,
+  HealthMetricInsert
+} from './types'
 
 export class HealthDatabaseClient {
   private supabase
@@ -57,10 +70,13 @@ export class HealthDatabaseClient {
   }
 
   // 健康报告相关操作
-  async createHealthReport(report: Omit<HealthReport, 'id' | 'created_at' | 'updated_at'>): Promise<HealthReport | null> {
+  async createHealthReport(report: Omit<HealthReportInsert, 'id' | 'created_at' | 'updated_at'>): Promise<HealthReport | null> {
     const { data, error } = await this.supabase
       .from('health_reports')
-      .insert(report)
+      .insert({
+        ...report,
+        report_type: report.report_type || 'modern' // 默认为现代体检报告
+      })
       .select()
       .single()
 
@@ -93,6 +109,22 @@ export class HealthDatabaseClient {
 
     if (error) {
       console.error('更新报告状态失败:', error)
+      return false
+    }
+    return true
+  }
+
+  async updateHealthReportType(reportId: string, reportType: 'modern' | 'tcm' | 'mixed'): Promise<boolean> {
+    const { error } = await this.supabase
+      .from('health_reports')
+      .update({ 
+        report_type: reportType,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reportId)
+
+    if (error) {
+      console.error('更新报告类型失败:', error)
       return false
     }
     return true
@@ -250,5 +282,64 @@ export class HealthDatabaseClient {
     return this.updateUserProfile(userId, {
       consultation_count: profile.consultation_count + 1
     })
+  }
+
+  // 中医报告相关操作
+  async createTCMReport(tcmReport: Omit<TCMReportInsert, 'id' | 'created_at' | 'updated_at'>): Promise<TCMReport | null> {
+    const { data, error } = await this.supabase
+      .from('tcm_reports')
+      .insert(tcmReport)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('创建中医报告失败:', error)
+      return null
+    }
+    return data
+  }
+
+  async getTCMReport(reportId: string): Promise<TCMReport | null> {
+    const { data, error } = await this.supabase
+      .from('tcm_reports')
+      .select('*')
+      .eq('report_id', reportId)
+      .single()
+
+    if (error) {
+      console.error('获取中医报告失败:', error)
+      return null
+    }
+    return data
+  }
+
+  async updateTCMReport(reportId: string, updates: Partial<TCMReportInsert>): Promise<boolean> {
+    const { error } = await this.supabase
+      .from('tcm_reports')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('report_id', reportId)
+
+    if (error) {
+      console.error('更新中医报告失败:', error)
+      return false
+    }
+    return true
+  }
+
+  async getUserTCMReports(userId: string): Promise<TCMReport[]> {
+    const { data, error } = await this.supabase
+      .from('tcm_reports')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('获取用户中医报告失败:', error)
+      return []
+    }
+    return data
   }
 } 

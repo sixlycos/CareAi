@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     UNIQUE(user_id)
 );
 
--- 2. 健康报告表
+-- 2. 健康报告表 (扩展支持报告类型)
 CREATE TABLE IF NOT EXISTS health_reports (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS health_reports (
     file_url TEXT NULL,
     file_type VARCHAR(50) NULL,
     raw_content TEXT NULL,
+    report_type VARCHAR(20) DEFAULT 'modern' CHECK (report_type IN ('modern', 'tcm', 'mixed')),
     status VARCHAR(20) DEFAULT 'pending',
     upload_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -63,7 +64,7 @@ CREATE TABLE IF NOT EXISTS health_reports (
     CONSTRAINT check_status CHECK (status IN ('pending', 'processing', 'completed', 'failed'))
 );
 
--- 3. 报告分析表
+-- 3. 报告分析表 (保持通用性)
 CREATE TABLE IF NOT EXISTS report_analyses (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     report_id UUID NOT NULL REFERENCES health_reports(id) ON DELETE CASCADE,
@@ -81,7 +82,43 @@ CREATE TABLE IF NOT EXISTS report_analyses (
     UNIQUE(report_id)
 );
 
--- 4. AI咨询表
+-- 4. 中医报告表 (新增，专门存储中医报告结构化数据)
+CREATE TABLE IF NOT EXISTS tcm_reports (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    report_id UUID NOT NULL REFERENCES health_reports(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    
+    -- 格检查 (Physical Examination)
+    physical_exam JSONB NULL DEFAULT '{}', -- 体温、神情、精神、皮肤巩膜、淋巴结等
+    
+    -- 中医四诊 (Four Diagnostic Methods)
+    inspection JSONB NULL DEFAULT '{}',    -- 望诊：舌苔、舌质、面色等
+    inquiry JSONB NULL DEFAULT '{}',       -- 问诊：饮食、睡眠、大小便、症状等
+    palpation JSONB NULL DEFAULT '{}',     -- 切诊：脉诊
+    auscultation JSONB NULL DEFAULT '{}',  -- 闻诊：声音、气味等
+    
+    -- 辅助检查
+    auxiliary_exam JSONB NULL DEFAULT '{}',
+    
+    -- 中医诊断
+    tcm_diagnosis JSONB NULL DEFAULT '{}', -- 中医病名、证型
+    
+    -- 治疗方案
+    treatment JSONB NULL DEFAULT '{}',     -- 处方、用法用量
+    
+    -- 其他信息
+    notes TEXT NULL,                       -- 医生备注
+    visit_date DATE NULL,                  -- 就诊日期
+    doctor_name VARCHAR(100) NULL,         -- 医生姓名
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- 确保每个报告只有一个中医数据
+    UNIQUE(report_id)
+);
+
+-- 5. AI咨询表
 CREATE TABLE IF NOT EXISTS ai_consultations (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -94,10 +131,10 @@ CREATE TABLE IF NOT EXISTS ai_consultations (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
     -- 对话类型约束
-    CONSTRAINT check_conversation_type CHECK (conversation_type IN ('general', 'report_based', 'follow_up'))
+    CONSTRAINT check_conversation_type CHECK (conversation_type IN ('general', 'report_based', 'follow_up', 'tcm_consultation'))
 );
 
--- 5. 健康指标表
+-- 6. 健康指标表
 CREATE TABLE IF NOT EXISTS health_metrics (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -125,31 +162,38 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_health_reports_user_id ON health_reports(user_id);
 CREATE INDEX IF NOT EXISTS idx_health_reports_status ON health_reports(status);
 CREATE INDEX IF NOT EXISTS idx_health_reports_upload_date ON health_reports(upload_date DESC);
+CREATE INDEX IF NOT EXISTS idx_health_reports_type ON health_reports(report_type);
 
 -- 报告分析索引
 CREATE INDEX IF NOT EXISTS idx_report_analyses_report_id ON report_analyses(report_id);
 CREATE INDEX IF NOT EXISTS idx_report_analyses_user_id ON report_analyses(user_id);
 CREATE INDEX IF NOT EXISTS idx_report_analyses_analysis_date ON report_analyses(analysis_date DESC);
 
+-- 中医报告索引 (新增)
+CREATE INDEX IF NOT EXISTS idx_tcm_reports_report_id ON tcm_reports(report_id);
+CREATE INDEX IF NOT EXISTS idx_tcm_reports_user_id ON tcm_reports(user_id);
+CREATE INDEX IF NOT EXISTS idx_tcm_reports_visit_date ON tcm_reports(visit_date DESC);
+
 -- AI咨询索引
 CREATE INDEX IF NOT EXISTS idx_ai_consultations_user_id ON ai_consultations(user_id);
-CREATE INDEX IF NOT EXISTS idx_ai_consultations_consultation_date ON ai_consultations(consultation_date DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_consultations_conversation_type ON ai_consultations(conversation_type);
+CREATE INDEX IF NOT EXISTS idx_ai_consultations_type ON ai_consultations(conversation_type);
+CREATE INDEX IF NOT EXISTS idx_ai_consultations_date ON ai_consultations(consultation_date DESC);
 
 -- 健康指标索引
 CREATE INDEX IF NOT EXISTS idx_health_metrics_user_id ON health_metrics(user_id);
 CREATE INDEX IF NOT EXISTS idx_health_metrics_type ON health_metrics(metric_type);
-CREATE INDEX IF NOT EXISTS idx_health_metrics_measurement_date ON health_metrics(measurement_date DESC);
-CREATE INDEX IF NOT EXISTS idx_health_metrics_user_type ON health_metrics(user_id, metric_type);
+CREATE INDEX IF NOT EXISTS idx_health_metrics_date ON health_metrics(measurement_date DESC);
+CREATE INDEX IF NOT EXISTS idx_health_metrics_source ON health_metrics(source);
 
 -- =============================================================================
--- 行级安全策略 (RLS)
+-- 行级安全策略 (Row Level Security)
 -- =============================================================================
 
--- 启用行级安全
+-- 启用RLS
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE health_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE report_analyses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tcm_reports ENABLE ROW LEVEL SECURITY; -- 新增
 ALTER TABLE ai_consultations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE health_metrics ENABLE ROW LEVEL SECURITY;
 
@@ -163,6 +207,10 @@ CREATE POLICY "用户只能访问自己的报告" ON health_reports
 
 -- 报告分析策略
 CREATE POLICY "用户只能访问自己的分析" ON report_analyses
+    FOR ALL USING (auth.uid() = user_id);
+
+-- 中医报告策略 (新增)
+CREATE POLICY "用户只能访问自己的中医报告" ON tcm_reports
     FOR ALL USING (auth.uid() = user_id);
 
 -- AI咨询策略

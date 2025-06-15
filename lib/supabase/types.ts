@@ -110,6 +110,7 @@ export interface Database {
           file_url: string | null
           file_type: string | null
           raw_content: string | null
+          report_type: 'modern' | 'tcm' | 'imaging' | 'pathology' | 'mixed'
           status: 'pending' | 'processing' | 'completed' | 'failed'
           upload_date: string
           created_at: string
@@ -123,6 +124,7 @@ export interface Database {
           file_url?: string | null
           file_type?: string | null
           raw_content?: string | null
+          report_type?: 'modern' | 'tcm' | 'imaging' | 'pathology' | 'mixed'
           status?: 'pending' | 'processing' | 'completed' | 'failed'
           upload_date?: string
           created_at?: string
@@ -136,8 +138,55 @@ export interface Database {
           file_url?: string | null
           file_type?: string | null
           raw_content?: string | null
+          report_type?: 'modern' | 'tcm' | 'imaging' | 'pathology' | 'mixed'
           status?: 'pending' | 'processing' | 'completed' | 'failed'
           upload_date?: string
+          updated_at?: string
+        }
+      }
+      medical_data: {
+        Row: {
+          id: string
+          report_id: string
+          user_id: string
+          numerical_indicators: Record<string, any>[] | null
+          imaging_findings: Record<string, any> | null
+          pathology_results: Record<string, any> | null
+          tcm_diagnosis: Record<string, any> | null
+          clinical_diagnosis: Record<string, any> | null
+          examination_info: Record<string, any> | null
+          raw_text: string | null
+          ai_analysis: Record<string, any> | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          report_id: string
+          user_id: string
+          numerical_indicators?: Record<string, any>[] | null
+          imaging_findings?: Record<string, any> | null
+          pathology_results?: Record<string, any> | null
+          tcm_diagnosis?: Record<string, any> | null
+          clinical_diagnosis?: Record<string, any> | null
+          examination_info?: Record<string, any> | null
+          raw_text?: string | null
+          ai_analysis?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          report_id?: string
+          user_id?: string
+          numerical_indicators?: Record<string, any>[] | null
+          imaging_findings?: Record<string, any> | null
+          pathology_results?: Record<string, any> | null
+          tcm_diagnosis?: Record<string, any> | null
+          clinical_diagnosis?: Record<string, any> | null
+          examination_info?: Record<string, any> | null
+          raw_text?: string | null
+          ai_analysis?: Record<string, any> | null
           updated_at?: string
         }
       }
@@ -151,6 +200,8 @@ export interface Database {
           key_findings: Record<string, any> | null
           recommendations: Record<string, any> | null
           health_score: number | null
+          report_type: string | null
+          analysis_type: string | null
           analysis_date: string
           created_at: string
           updated_at: string
@@ -164,6 +215,8 @@ export interface Database {
           key_findings?: Record<string, any> | null
           recommendations?: Record<string, any> | null
           health_score?: number | null
+          report_type?: string | null
+          analysis_type?: string | null
           analysis_date?: string
           created_at?: string
           updated_at?: string
@@ -177,7 +230,49 @@ export interface Database {
           key_findings?: Record<string, any> | null
           recommendations?: Record<string, any> | null
           health_score?: number | null
+          report_type?: string | null
+          analysis_type?: string | null
           analysis_date?: string
+          updated_at?: string
+        }
+      }
+      health_reminders: {
+        Row: {
+          id: string
+          user_id: string
+          report_id: string | null
+          reminder_type: string
+          title: string
+          description: string | null
+          due_date: string | null
+          is_completed: boolean
+          priority: 'low' | 'medium' | 'high' | 'urgent'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          report_id?: string | null
+          reminder_type: string
+          title: string
+          description?: string | null
+          due_date?: string | null
+          is_completed?: boolean
+          priority?: 'low' | 'medium' | 'high' | 'urgent'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          report_id?: string | null
+          reminder_type?: string
+          title?: string
+          description?: string | null
+          due_date?: string | null
+          is_completed?: boolean
+          priority?: 'low' | 'medium' | 'high' | 'urgent'
           updated_at?: string
         }
       }
@@ -187,7 +282,7 @@ export interface Database {
           user_id: string
           question: string
           ai_response: string
-          conversation_type: 'general' | 'report_based' | 'follow_up'
+          conversation_type: 'general' | 'report_based' | 'follow_up' | 'tcm_consultation'
           context_data: Record<string, any> | null
           consultation_date: string
           created_at: string
@@ -198,7 +293,7 @@ export interface Database {
           user_id: string
           question: string
           ai_response: string
-          conversation_type?: 'general' | 'report_based' | 'follow_up'
+          conversation_type?: 'general' | 'report_based' | 'follow_up' | 'tcm_consultation'
           context_data?: Record<string, any> | null
           consultation_date?: string
           created_at?: string
@@ -209,7 +304,7 @@ export interface Database {
           user_id?: string
           question?: string
           ai_response?: string
-          conversation_type?: 'general' | 'report_based' | 'follow_up'
+          conversation_type?: 'general' | 'report_based' | 'follow_up' | 'tcm_consultation'
           context_data?: Record<string, any> | null
           consultation_date?: string
           updated_at?: string
@@ -265,16 +360,87 @@ export interface Database {
   }
 }
 
-// 便捷类型别名
+// 新增专门的医疗数据接口
+export interface NumericalIndicator {
+  name: string
+  value: number | string
+  unit: string
+  normalRange: string
+  status: 'normal' | 'high' | 'low' | 'critical'
+}
+
+export interface ImagingFindings {
+  type: string // CT, MRI, X光等
+  location: string
+  technique?: string
+  findings: string
+  impression: string
+  suggestions?: string
+}
+
+export interface PathologyResults {
+  specimen: string
+  diagnosis: string
+  details: string
+  grade?: string
+  stage?: string
+}
+
+export interface TCMDiagnosis {
+  inspection?: string // 望诊
+  inquiry?: string // 问诊
+  palpation?: string // 切诊
+  auscultation?: string // 闻诊
+  syndrome?: string // 证型
+  disease?: string // 病名
+  constitution?: string // 体质
+}
+
+export interface ClinicalDiagnosis {
+  primary?: string
+  secondary?: string[]
+  tcm_diagnosis?: string
+  treatment_principle?: string
+  prescription?: string
+  medications?: string[]
+  usage?: string
+  recommendations?: string[]
+}
+
+export interface ExaminationInfo {
+  date: string
+  doctor?: string
+  department?: string
+  institution?: string
+  equipment?: string
+}
+
+// 统一的医疗数据接口
+export interface UnifiedMedicalData {
+  numerical_indicators?: NumericalIndicator[]
+  imaging_findings?: ImagingFindings
+  pathology_results?: PathologyResults
+  tcm_diagnosis?: TCMDiagnosis
+  clinical_diagnosis?: ClinicalDiagnosis
+  examination_info?: ExaminationInfo
+  raw_text?: string
+  ai_analysis?: Record<string, any>
+}
+
+// 类型导出
 export type UserProfile = Database['public']['Tables']['user_profiles']['Row']
 export type HealthReport = Database['public']['Tables']['health_reports']['Row']
+export type MedicalData = Database['public']['Tables']['medical_data']['Row']
 export type ReportAnalysis = Database['public']['Tables']['report_analyses']['Row']
+export type HealthReminder = Database['public']['Tables']['health_reminders']['Row']
 export type AIConsultation = Database['public']['Tables']['ai_consultations']['Row']
 export type HealthMetric = Database['public']['Tables']['health_metrics']['Row']
 
-// 插入类型
+// 插入类型导出
 export type UserProfileInsert = Database['public']['Tables']['user_profiles']['Insert']
 export type HealthReportInsert = Database['public']['Tables']['health_reports']['Insert']
+export type MedicalDataInsert = Database['public']['Tables']['medical_data']['Insert']
 export type ReportAnalysisInsert = Database['public']['Tables']['report_analyses']['Insert']
+export type HealthReminderInsert = Database['public']['Tables']['health_reminders']['Insert']
 export type AIConsultationInsert = Database['public']['Tables']['ai_consultations']['Insert']
 export type HealthMetricInsert = Database['public']['Tables']['health_metrics']['Insert'] 

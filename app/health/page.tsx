@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { HealthDatabase } from "@/lib/supabase/database";
 import ReportUpload from "@/components/health/ReportUpload";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, FileText, MessageCircle, TrendingUp, Calendar, Brain, Zap, Activity } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Heart, FileText, MessageCircle, TrendingUp, Calendar, Brain, Activity } from "lucide-react";
 
 export default async function HealthDashboard() {
   const supabase = await createClient();

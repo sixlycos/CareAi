@@ -164,7 +164,7 @@ interface HealthTrend {
 - 原生模块集成
 
 ### AI/ML
-- OpenAI GPT-4
+- OpenAI gpt-4.1
 - 语音识别API
 - 自然语言处理
 - 机器学习模型

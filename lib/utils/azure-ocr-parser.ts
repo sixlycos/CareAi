@@ -152,7 +152,7 @@ export class AzureOCRParser {
    */
   static parseOCRResult(rawResult: AzureOCRRawResult): ParsedOCRResult {
     try {
-      console.log('🔍 开始解析Azure OCR结果...');
+      console.log('🔍 开始解析OCR结果...');
       
       // 验证结果状态
       if (rawResult.status !== 'succeeded') {

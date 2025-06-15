@@ -57,7 +57,7 @@ export default function AzureAITestPage() {
         const testMessages = [
           { role: 'user', content: '你好，请简单回复确认连接正常' }
         ]
-        await azureAI['callAzureOpenAI'](testMessages, 'gpt-4', 100)
+        await azureAI['callAzureOpenAI'](testMessages, 'gpt-4.1', 100)
         const duration1 = Date.now() - startTime1
         updateTestResult(0, 'success', 'Azure OpenAI 连接正常', duration1)
       } catch (error) {

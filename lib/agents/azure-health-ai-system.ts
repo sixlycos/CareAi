@@ -1,5 +1,6 @@
 // Azure生态健康AI系统 - 使用Azure OpenAI + Azure Computer Vision
 
+// 健康指标接口
 interface HealthIndicator {
   name: string;
   value: number | string;
@@ -8,6 +9,7 @@ interface HealthIndicator {
   status: 'normal' | 'high' | 'low' | 'critical';
 }
 
+// 分析结果接口
 interface AnalysisResult {
   overallStatus: '优秀' | '良好' | '注意' | '建议就医' | '无法评估';
   healthScore: number;
@@ -17,6 +19,111 @@ interface AnalysisResult {
     lifestyle: string[];
     diet: string[];
     exercise: string[];
+    followUp: string[];
+  };
+  risks: Array<{
+    type: string;
+    probability: '低' | '中' | '高';
+    description: string;
+  }>;
+}
+
+// 中医报告结构化数据接口
+interface TCMReportData {
+  // 格检查
+  physicalExam: {
+    temperature?: string;
+    mentalState?: string;
+    spirit?: string;
+    skinAndSclera?: string;
+    lymphNodes?: string;
+    lips?: string;
+    neck?: string;
+    chest?: string;
+    breathing?: string;
+    heart?: string;
+    abdomen?: string;
+    limbs?: string;
+    neurologicalExam?: string;
+    [key: string]: string | undefined;
+  };
+  
+  // 中医四诊
+  fourDiagnostics: {
+    // 望诊
+    inspection: {
+      tongueCoating?: string;
+      tongueBody?: string;
+      complexion?: string;
+      [key: string]: string | undefined;
+    };
+    
+    // 问诊
+    inquiry: {
+      appetite?: string;
+      taste?: string;
+      sleep?: string;
+      bowelMovement?: string;
+      urination?: string;
+      gynecological?: string;
+      [key: string]: string | undefined;
+    };
+    
+    // 切诊
+    palpation: {
+      pulse?: string;
+      [key: string]: string | undefined;
+    };
+    
+    // 闻诊 (听声音、闻气味)
+    auscultation?: {
+      [key: string]: string | undefined;
+    };
+  };
+  
+  // 辅助检查
+  auxiliaryExam?: {
+    [key: string]: string | undefined;
+  };
+  
+  // 中医诊断
+  tcmDiagnosis: {
+    disease?: string;      // 中医病名
+    syndrome?: string;     // 中医证型
+    [key: string]: string | undefined;
+  };
+  
+  // 治疗方案
+  treatment: {
+    prescription?: string;  // 处方
+    dosage?: string;       // 用法用量
+    [key: string]: string | undefined;
+  };
+  
+  // 其他信息
+  visitDate?: string;
+  doctorName?: string;
+  notes?: string;
+}
+
+// 中医分析结果接口
+interface TCMAnalysisResult {
+  overallStatus: '健康' | '亚健康' | '需要调理' | '建议就医' | '无法评估';
+  constitution?: string;  // 体质类型
+  summary: string;
+  keyFindings: {
+    symptoms: string[];
+    tcmDiagnosis: {
+      disease?: string;
+      syndrome?: string;
+    };
+    constitution?: string;
+  };
+  recommendations: {
+    lifestyle: string[];
+    diet: string[];
+    exercise: string[];
+    tcmTreatment: string[];
     followUp: string[];
   };
   risks: Array<{
@@ -202,8 +309,19 @@ class AzureHealthAISystem {
     if (fullText.trim().length < 20) {
       throw new Error('文本内容过短，无法进行有效解析');
     }
+
+    // 先识别报告类型
+    const reportType = await this.identifyReportType(fullText)
+    console.log('🔍 识别报告类型:', reportType)
+
+    // 根据报告类型采用不同的解析策略
+    if (reportType === 'tcm') {
+      // 对于中医报告，返回空数组，因为中医报告不包含数值指标
+      console.log('📋 中医报告，跳过数值指标解析')
+      return []
+    }
     
-    // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【Azure OpenAI Chat Completions API - GPT-4模型智能解析】
+    // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【Azure OpenAI Chat Completions API - gpt-4.1模型智能解析】
     const prompt = `
 请从以下体检报告文本中识别并提取所有实际存在的健康指标数据。
 
@@ -244,10 +362,10 @@ ${fullText}
 `;
 
     try {
-      // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【Azure OpenAI Chat Completions API - GPT-4模型智能解析】
+      // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【Azure OpenAI Chat Completions API - gpt-4.1模型智能解析】
       const response = await this.callAzureOpenAI([
         { role: 'user', content: prompt }
-      ], 'gpt-4', 3000);
+      ], 'gpt-4.1', 3000);
       
       // 清理AI响应，提取JSON部分
       let cleanedResponse = response.trim();
@@ -293,6 +411,255 @@ ${fullText}
     }
   }
 
+  // 新增：报告类型识别
+  async identifyReportType(fullText: string): Promise<'modern' | 'tcm' | 'mixed'> {
+    const prompt = `
+请分析以下医疗文本，判断这是什么类型的医疗报告。
+
+文本内容：
+${fullText}
+
+判断标准：
+1. 现代医学报告（modern）：包含血常规、肝功能、肾功能等数值型指标，使用现代医学术语
+2. 中医报告（tcm）：包含望闻问切四诊、中医病名、证型、中药处方等中医专业术语
+3. 混合报告（mixed）：同时包含现代医学指标和中医诊断内容
+
+请直接返回以下三个选项之一：
+- modern
+- tcm  
+- mixed
+
+只返回类型，不需要解释。`;
+
+    try {
+      const response = await this.callAzureOpenAI([
+        { role: 'user', content: prompt }
+      ], 'gpt-4.1', 500);
+      
+      const type = response.trim().toLowerCase();
+      if (['modern', 'tcm', 'mixed'].includes(type)) {
+        return type as 'modern' | 'tcm' | 'mixed';
+      }
+      
+      // 如果AI返回的不是预期格式，进行基于关键词的简单判断
+      return this.fallbackReportTypeIdentification(fullText);
+      
+    } catch (error) {
+      console.error('报告类型识别失败，使用备用方法:', error);
+      return this.fallbackReportTypeIdentification(fullText);
+    }
+  }
+
+  // 备用报告类型识别方法（基于关键词）
+  private fallbackReportTypeIdentification(text: string): 'modern' | 'tcm' | 'mixed' {
+    const tcmKeywords = ['中医', '望诊', '问诊', '切诊', '闻诊', '舌苔', '脉诊', '证型', '中药', '处方', '月经类病', '脾肾两虚'];
+    const modernKeywords = ['血常规', '肝功能', '肾功能', 'ALT', 'AST', 'HDL', 'LDL', '白细胞', '红细胞', '血小板'];
+    
+    const tcmCount = tcmKeywords.filter(keyword => text.includes(keyword)).length;
+    const modernCount = modernKeywords.filter(keyword => text.includes(keyword)).length;
+    
+    if (tcmCount > 0 && modernCount > 0) {
+      return 'mixed';
+    } else if (tcmCount > 0) {
+      return 'tcm';
+    } else {
+      return 'modern';
+    }
+  }
+
+  // 新增：中医报告解析
+  async parseTCMReport(textArray: string[]): Promise<TCMReportData> {
+    const fullText = textArray.join('\n');
+    
+    console.log('🏥 开始解析中医报告...');
+    
+    const prompt = `
+请从以下中医报告文本中提取结构化信息。
+
+中医报告文本：
+${fullText}
+
+请严格按照以下JSON格式返回，只提取文本中实际存在的信息：
+{
+  "physicalExam": {
+    "temperature": "体温信息",
+    "mentalState": "神情描述",
+    "spirit": "精神状态",
+    "skinAndSclera": "皮肤巩膜情况",
+    "lymphNodes": "淋巴结检查",
+    "lips": "口唇情况",
+    "neck": "颈部检查",
+    "chest": "胸部检查",
+    "breathing": "呼吸情况",
+    "heart": "心脏检查",
+    "abdomen": "腹部检查",
+    "limbs": "四肢检查",
+    "neurologicalExam": "神经系统检查"
+  },
+  "fourDiagnostics": {
+    "inspection": {
+      "tongueCoating": "舌苔描述",
+      "tongueBody": "舌质描述",
+      "complexion": "面色描述"
+    },
+    "inquiry": {
+      "appetite": "饮食情况",
+      "taste": "口味偏好",
+      "sleep": "睡眠情况",
+      "bowelMovement": "大便情况",
+      "urination": "小便情况",
+      "gynecological": "妇科情况"
+    },
+    "palpation": {
+      "pulse": "脉象描述"
+    }
+  },
+  "auxiliaryExam": {
+    "description": "辅助检查描述"
+  },
+  "tcmDiagnosis": {
+    "disease": "中医病名",
+    "syndrome": "中医证型"
+  },
+  "treatment": {
+    "prescription": "处方内容",
+    "dosage": "用法用量"
+  },
+  "visitDate": "就诊日期",
+  "doctorName": "医生姓名",
+  "notes": "其他备注"
+}
+
+重要要求：
+1. 只返回纯JSON，不包含markdown代码块
+2. 只提取文本中实际存在的信息，不存在的字段设为null或空字符串
+3. 保持原文描述的准确性
+4. 直接以{开始，以}结束
+`;
+
+    try {
+      const response = await this.callAzureOpenAI([
+        { role: 'user', content: prompt }
+      ], 'gpt-4.1', 3000);
+      
+      // 清理响应
+      let cleanedResponse = response.trim();
+      if (cleanedResponse.includes('```json')) {
+        const jsonMatch = cleanedResponse.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          cleanedResponse = jsonMatch[1].trim();
+        }
+      } else if (cleanedResponse.includes('```')) {
+        const jsonMatch = cleanedResponse.match(/```\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          cleanedResponse = jsonMatch[1].trim();
+        }
+      }
+      
+      const jsonStart = cleanedResponse.indexOf('{');
+      const jsonEnd = cleanedResponse.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanedResponse = cleanedResponse.substring(jsonStart, jsonEnd + 1);
+      }
+      
+      const tcmData = JSON.parse(cleanedResponse);
+      console.log('✅ 中医报告解析成功');
+      return tcmData;
+      
+    } catch (error) {
+      console.error('中医报告解析失败:', error);
+      throw new Error(`中医报告解析失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  }
+
+  // 新增：中医报告分析
+  async analyzeTCMReport(tcmData: TCMReportData, userProfile: any): Promise<TCMAnalysisResult> {
+    console.log('🏥 开始分析中医报告...');
+    
+    // 导入用户上下文构建器
+    const { getUserContextString } = await import('@/lib/utils/user-context-builder');
+    const userContext = getUserContextString(userProfile, 'tcm_analysis');
+    
+    const prompt = `
+你是一位经验丰富的中医师，请根据以下中医报告数据提供专业分析。
+
+中医报告数据：
+${JSON.stringify(tcmData, null, 2)}
+
+${userContext && userContext !== '暂无详细健康档案信息' ? `用户健康档案：\n${userContext}\n` : ''}
+
+请按照以下JSON格式返回分析结果：
+{
+  "overallStatus": "健康/亚健康/需要调理/建议就医",
+  "constitution": "体质类型（如气虚质、阳虚质等）",
+  "summary": "整体健康状况总结，不超过300字",
+  "keyFindings": {
+    "symptoms": ["主要症状列表"],
+    "tcmDiagnosis": {
+      "disease": "中医病名",
+      "syndrome": "中医证型"
+    },
+    "constitution": "体质分析"
+  },
+  "recommendations": {
+    "lifestyle": ["生活起居建议"],
+    "diet": ["饮食调养建议"],
+    "exercise": ["运动养生建议"],
+    "tcmTreatment": ["中医治疗建议"],
+    "followUp": ["复诊建议"]
+  },
+  "risks": [
+    {
+      "type": "风险类型",
+      "probability": "低/中/高",
+      "description": "风险描述和预防建议"
+    }
+  ]
+}
+
+分析要求：
+1. 基于中医理论进行专业分析
+2. 结合四诊信息判断体质和证型
+3. 提供具体可行的调养建议
+4. 分析潜在健康风险
+5. 只返回纯JSON格式
+`;
+
+    try {
+      const response = await this.callAzureOpenAI([
+        { role: 'user', content: prompt }
+      ], 'gpt-4.1', 3000);
+      
+      // 清理响应
+      let cleanedResponse = response.trim();
+      if (cleanedResponse.includes('```json')) {
+        const jsonMatch = cleanedResponse.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          cleanedResponse = jsonMatch[1].trim();
+        }
+      } else if (cleanedResponse.includes('```')) {
+        const jsonMatch = cleanedResponse.match(/```\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          cleanedResponse = jsonMatch[1].trim();
+        }
+      }
+      
+      const jsonStart = cleanedResponse.indexOf('{');
+      const jsonEnd = cleanedResponse.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanedResponse = cleanedResponse.substring(jsonStart, jsonEnd + 1);
+      }
+      
+      const analysis = JSON.parse(cleanedResponse);
+      console.log('✅ 中医报告分析成功');
+      return analysis;
+      
+    } catch (error) {
+      console.error('中医报告分析失败:', error);
+      throw new Error(`中医报告分析失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  }
+
   // Agent 3: Azure OpenAI 健康分析 with enhanced prompts
   async analyzeHealthData(indicators: HealthIndicator[], userProfile: any): Promise<AnalysisResult> {
     if (!indicators || indicators.length === 0) {
@@ -319,7 +686,7 @@ ${fullText}
     console.log('👤 [AzureHealthAI] analyzeHealthData 用户档案:', userProfile ? '已提供' : '未提供');
     console.log('🔍 [AzureHealthAI] analyzeHealthData 处理后的用户上下文:', userContext);
 
-    // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【Azure OpenAI Chat Completions API - GPT-4.1模型医学专业分析】
+    // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【Azure OpenAI Chat Completions API - gpt-4.1模型医学专业分析】
     let prompt = `你是一位经验丰富的全科医生，擅长解读体检报告并给出通俗易懂的健康建议。
 
 请根据以下体检数据提供专业分析：
@@ -384,7 +751,7 @@ ${userContext}
 现在开始分析体检数据，直接返回JSON格式的分析结果。`;
 
     try {
-      // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【Azure OpenAI Chat Completions API - GPT-4.1模型医学专业分析】
+      // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【Azure OpenAI Chat Completions API - gpt-4.1模型医学专业分析】
       const response = await this.callAzureOpenAI([
         { role: 'system', content: prompt }
       ], 'gpt-4.1', 4000);
@@ -442,7 +809,7 @@ ${userContext}
     const userContextString = getUserContextString(userContext, 'chat');
     console.log('🔍 [AzureHealthAI] 处理后的用户上下文:', userContextString);
 
-    // 【调用场景：健康问答对话和指标解读互动】+【Azure OpenAI Chat Completions API - GPT-4.1模型智能问答】
+    // 【调用场景：健康问答对话和指标解读互动】+【Azure OpenAI Chat Completions API - gpt-4.1模型智能问答】
     let systemPrompt = `你是一位专业的健康咨询AI助手，为用户提供个性化的健康建议。
 
 回答原则：
@@ -475,8 +842,8 @@ ${userContext}
     console.log('🎯 [AzureHealthAI] 系统提示词长度:', systemPrompt.length);
 
     try {
-      // 【调用场景：健康问答对话和指标解读互动】+【Azure OpenAI Chat Completions API - GPT-4.1模型智能问答】
-      const response = await this.callAzureOpenAI(messages, 'gpt-4.1', 1500);
+      // 【调用场景：健康问答对话和指标解读互动】+【Azure OpenAI Chat Completions API - gpt-4.1模型智能问答】
+      const response = await this.callAzureOpenAI(messages, 'gpt-4.1');
       console.log('✅ [AzureHealthAI] 健康问答成功，响应长度:', response.length);
       console.log('📋 [AzureHealthAI] AI响应预览:', response.substring(0, 100) + '...');
       return response;
@@ -521,8 +888,7 @@ ${userContext}
   // Azure OpenAI API调用 - 改进的错误处理和重试机制
   private async callAzureOpenAI(
     messages: any[], 
-    model: string = 'gpt-4', 
-    maxTokens: number = 2000,
+    model: string = 'gpt-4.1', 
     maxRetries: number = 3
   ): Promise<string> {
     
@@ -547,8 +913,7 @@ ${userContext}
             },
             body: JSON.stringify({
               messages,
-              temperature: 0.3,
-              max_tokens: maxTokens,
+              temperature: 0.6,
               top_p: 0.9,
               frequency_penalty: 0,
               presence_penalty: 0,

@@ -23,7 +23,7 @@ NEXT_PUBLIC_AZURE_OPENAI_KEY=your-azure-openai-api-key
 NEXT_PUBLIC_AZURE_OPENAI_VERSION=2024-02-15-preview
 
 # 模型部署名称（你在Azure中创建的部署名）
-NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT=your-gpt-4-deployment-name
+NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT=your-gpt-4.1-deployment-name
 
 # 可选：GPT-3.5模型部署（用于问答功能，成本更低）
 NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT=your-gpt-35-turbo-deployment-name
@@ -48,15 +48,15 @@ NEXT_PUBLIC_AZURE_VISION_KEY=your-azure-vision-api-key
 # 3. 配置基本信息：
 #    - 订阅：选择你的订阅
 #    - 资源组：创建新的或选择现有的
-#    - 区域：选择 East US、West Europe 等支持GPT-4的区域
+#    - 区域：选择 East US、West Europe 等支持gpt-4.1的区域
 #    - 名称：your-openai-resource-name
 #    - 定价层：标准 S0
 
 # 4. 部署模型：
 #    - 进入Azure OpenAI Studio
 #    - 模型部署 → 创建新部署
-#    - 模型：gpt-4（用于分析）、gpt-35-turbo（用于问答）
-#    - 部署名称：自定义，如 gpt-4-health、gpt-35-turbo-chat
+#    - 模型：gpt-4.1（用于分析）、gpt-35-turbo（用于问答）
+#    - 部署名称：自定义，如 gpt-4.1-health、gpt-35-turbo-chat
 ```
 
 ### 2. 创建Azure Computer Vision服务
@@ -121,7 +121,7 @@ NEXT_PUBLIC_AZURE_VISION_KEY=your-azure-vision-api-key
 
 ### Azure方案成本（月）
 ```
-Azure OpenAI（GPT-4）:
+Azure OpenAI（gpt-4.1）:
 - 输入：$0.03/1K tokens × 1000 tokens × 100次 = $3
 - 输出：$0.06/1K tokens × 500 tokens × 100次 = $3
 小计：$6
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
 ### 2. 请求频率限制
 ```typescript
 // Azure OpenAI默认限制：
-// - GPT-4: 20,000 tokens/minute
+// - gpt-4.1: 20,000 tokens/minute
 // - GPT-3.5: 120,000 tokens/minute
 // - 建议添加重试和限流机制
 ```

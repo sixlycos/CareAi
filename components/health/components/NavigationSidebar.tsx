@@ -1,49 +1,26 @@
-import { Upload, Brain, Activity, Eye, MessageCircle } from 'lucide-react'
-import { type AnalysisResult, type HealthIndicator } from '@/lib/agents/azure-health-ai-system'
-import { ParsedOCRResult } from '@/lib/utils/azure-ocr-parser'
+import { Upload, Brain, Activity, Eye, MessageCircle, Sparkles } from 'lucide-react'
+import { UnifiedAnalysisResult } from '@/hooks/useAIAnalysis'
 import { OCRResult } from '../types'
 
 interface NavigationSidebarProps {
-  result: AnalysisResult | null
-  extractedIndicators: HealthIndicator[]
-  ocrResult: OCRResult | null
-  enhancedOCRResult: ParsedOCRResult | null
-  showHealthChat: boolean
-  aiExplainMode: boolean
-  selectedIndicator: HealthIndicator | null
-  indicatorExplanation: string | null
-  isExplaining: boolean
-  onToggleAiExplainMode: () => void
+  analysisResult?: UnifiedAnalysisResult | null
+  ocrResult?: OCRResult | null
+  onSectionClick?: (sectionId: string) => void
+  onAIInsightsToggle?: () => void
+  isAIInsightsActive?: boolean
 }
 
 export function NavigationSidebar({
-  result,
-  extractedIndicators,
+  analysisResult,
   ocrResult,
-  enhancedOCRResult,
-  showHealthChat,
-  aiExplainMode,
-  selectedIndicator,
-  indicatorExplanation,
-  isExplaining,
-  onToggleAiExplainMode
+  onSectionClick,
+  onAIInsightsToggle,
+  isAIInsightsActive = false
 }: NavigationSidebarProps) {
   const scrollToElement = (id: string) => {
-    // 特殊处理OCR结果跳转
-    if (id === 'ocr-results') {
-      const ocrElement = document.getElementById('ocr-results')
-      if (ocrElement) {
-        // 如果OCR结果区域存在，直接跳转
-        ocrElement.scrollIntoView({ behavior: 'smooth' })
-      } else {
-        // 如果OCR结果区域不存在，可能是被隐藏了，尝试滚动到增强OCR结果面板
-        const enhancedOcrElement = document.querySelector('[data-ocr-panel]')
-        if (enhancedOcrElement) {
-          enhancedOcrElement.scrollIntoView({ behavior: 'smooth' })
-        }
-      }
+    if (onSectionClick) {
+      onSectionClick(id)
     } else {
-      // 其他元素正常跳转
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     }
   }
@@ -55,7 +32,7 @@ export function NavigationSidebar({
         
         {/* 上传区域 */}
         <button
-          onClick={() => scrollToElement('upload-section')}
+          onClick={() => scrollToElement('upload-ocr-section')}
           className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           title="上传区域"
         >
@@ -63,7 +40,7 @@ export function NavigationSidebar({
         </button>
 
         {/* AI分析结果 */}
-        {result && (
+        {analysisResult && (
           <button
             onClick={() => scrollToElement('ai-analysis')}
             className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
@@ -74,7 +51,7 @@ export function NavigationSidebar({
         )}
 
         {/* 健康指标 */}
-        {extractedIndicators.length > 0 && (
+        {analysisResult?.keyFindings && analysisResult.keyFindings.length > 0 && (
           <button
             onClick={() => scrollToElement('health-indicators')}
             className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-green-100 dark:hover:bg-green-800 transition-colors"
@@ -84,10 +61,25 @@ export function NavigationSidebar({
           </button>
         )}
 
-        {/* OCR结果 */}
-        {(ocrResult || enhancedOCRResult) && (
+        {/* AI智能解读 - 新增功能 */}
+        {analysisResult?.keyFindings && analysisResult.keyFindings.length > 0 && (
           <button
-            onClick={() => scrollToElement('ocr-results')}
+            onClick={onAIInsightsToggle}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
+              isAIInsightsActive 
+                ? 'bg-purple-100 dark:bg-purple-800 border-2 border-purple-500 shadow-lg' 
+                : 'hover:bg-purple-100 dark:hover:bg-purple-800'
+            }`}
+            title={isAIInsightsActive ? 'AI解读模式开启中' : '开启AI智能解读'}
+          >
+            <Sparkles className={`h-4 w-4 ${isAIInsightsActive ? 'text-purple-600 animate-pulse' : 'text-purple-600'}`} />
+          </button>
+        )}
+
+        {/* OCR结果 */}
+        {ocrResult && (
+          <button
+            onClick={() => scrollToElement('upload-ocr-section')}
             className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-purple-100 dark:hover:bg-purple-800 transition-colors"
             title="OCR识别结果"
           >
@@ -96,7 +88,7 @@ export function NavigationSidebar({
         )}
 
         {/* AI咨询 */}
-        {showHealthChat && (
+        {analysisResult && (
           <button
             onClick={() => scrollToElement('health-chat')}
             className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-orange-100 dark:hover:bg-orange-800 transition-colors"
@@ -107,36 +99,29 @@ export function NavigationSidebar({
         )}
 
         {/* 分隔线 */}
-        {extractedIndicators.length > 0 && (
+        {analysisResult && (
           <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
         )}
 
-        {/* AI解读面板 */}
-        {extractedIndicators.length > 0 && (
+        {/* 分析状态指示器 */}
+        {analysisResult && (
           <div className="w-full">
-            {/* AI解读模式切换 */}
-            <button
-              onClick={onToggleAiExplainMode}
-              className={`w-full p-2 rounded-lg flex items-center justify-center transition-all duration-200 relative ${
-                aiExplainMode 
-                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-300/50' 
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
-              }`}
-              title={aiExplainMode ? "关闭AI解读模式" : "开启AI解读模式"}
-            >
-              <Brain className={`h-4 w-4 ${aiExplainMode ? 'animate-bounce' : ''}`} />
-              {/* AI模式激活指示器 */}
-              {aiExplainMode && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-              )}
-            </button>
-
-            {/* AI解读模式状态提示 */}
-            {aiExplainMode && (
-              <div className="mt-1 text-center">
+            <div className="w-full p-2 rounded-lg flex items-center justify-center bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/30 dark:to-blue-900/30">
+              <Brain className="h-4 w-4 text-green-600" />
+            </div>
+            <div className="mt-1 text-center">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium whitespace-nowrap">
+                <Brain className="h-3 w-3" />
+                分析完成
+              </span>
+            </div>
+            
+            {/* AI解读状态指示 */}
+            {isAIInsightsActive && (
+              <div className="mt-2 text-center">
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium whitespace-nowrap">
-                  <Brain className="h-3 w-3" />
-                  AI解读已启用
+                  <Sparkles className="h-3 w-3 animate-pulse" />
+                  AI解读中
                 </span>
               </div>
             )}

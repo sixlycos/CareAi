@@ -23,7 +23,7 @@ interface InsightRecord {
 
 interface AIInsightPanelProps {
   indicators: HealthIndicator[]
-  azureAI: AzureHealthAISystem
+  azureAI: AzureHealthAISystem | null
   isVisible: boolean
 }
 
@@ -55,11 +55,11 @@ export default function AIInsightPanel({ indicators, azureAI, isVisible }: AIIns
       const profile = await healthDB.getUserProfile(user.id)
       
       if (profile?.preferences) {
-        const prefs = profile.preferences as any
+        const prefs = profile.preferences as Record<string, unknown>
         setUserProfile({
-          age: prefs.age,
-          gender: prefs.gender,
-          medicalHistory: prefs.medicalHistory || [],
+          age: typeof prefs.age === 'number' ? prefs.age : undefined,
+          gender: typeof prefs.gender === 'string' ? prefs.gender : undefined,
+          medicalHistory: Array.isArray(prefs.medicalHistory) ? prefs.medicalHistory as string[] : [],
           completed: !!(prefs.age && prefs.gender)
         })
       }

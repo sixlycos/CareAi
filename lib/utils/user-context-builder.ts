@@ -246,7 +246,7 @@ export class UserContextBuilder {
   /**
    * 根据场景选择合适的上下文
    */
-  public buildForScenario(scenario: 'analysis' | 'chat' | 'explanation'): string {
+  public buildForScenario(scenario: 'analysis' | 'chat' | 'explanation' | 'tcm_analysis'): string {
     const context = this.build()
     
     switch (scenario) {
@@ -264,6 +264,10 @@ export class UserContextBuilder {
         if (context.basicInfo) parts.push(context.basicInfo)
         if (context.healthBackground) parts.push(context.healthBackground)
         return parts.join('；') || '暂无相关健康信息'
+      
+      case 'tcm_analysis':
+        // 中医分析需要完整信息，特别关注既往病史和体质相关信息
+        return context.fullContext
       
       default:
         return context.fullContext
@@ -283,7 +287,7 @@ export function createUserContext(profile: UserProfile | null): UserContextBuild
  */
 export function getUserContextString(
   profile: UserProfile | null, 
-  scenario: 'analysis' | 'chat' | 'explanation' = 'analysis'
+  scenario: 'analysis' | 'chat' | 'explanation' | 'tcm_analysis' = 'analysis'
 ): string {
   return new UserContextBuilder(profile).buildForScenario(scenario)
 } 
