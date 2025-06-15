@@ -114,6 +114,7 @@ export interface Database {
           upload_date: string
           created_at: string
           updated_at: string
+          report_type: 'modern' | 'tcm' | 'imaging' | 'pathology' | 'mixed'
         }
         Insert: {
           id?: string
@@ -127,6 +128,7 @@ export interface Database {
           upload_date?: string
           created_at?: string
           updated_at?: string
+          report_type?: 'modern' | 'tcm' | 'imaging' | 'pathology' | 'mixed'
         }
         Update: {
           id?: string
@@ -139,6 +141,7 @@ export interface Database {
           status?: 'pending' | 'processing' | 'completed' | 'failed'
           upload_date?: string
           updated_at?: string
+          report_type?: 'modern' | 'tcm' | 'imaging' | 'pathology' | 'mixed'
         }
       }
       report_analyses: {
@@ -154,6 +157,8 @@ export interface Database {
           analysis_date: string
           created_at: string
           updated_at: string
+          report_type: string | null
+          analysis_type: 'comprehensive' | 'indicators_only' | 'tcm_only' | 'imaging_only'
         }
         Insert: {
           id?: string
@@ -167,6 +172,8 @@ export interface Database {
           analysis_date?: string
           created_at?: string
           updated_at?: string
+          report_type?: string | null
+          analysis_type?: 'comprehensive' | 'indicators_only' | 'tcm_only' | 'imaging_only'
         }
         Update: {
           id?: string
@@ -179,6 +186,8 @@ export interface Database {
           health_score?: number | null
           analysis_date?: string
           updated_at?: string
+          report_type?: string | null
+          analysis_type?: 'comprehensive' | 'indicators_only' | 'tcm_only' | 'imaging_only'
         }
       }
       ai_consultations: {
@@ -252,6 +261,92 @@ export interface Database {
           updated_at?: string
         }
       }
+      health_reminders: {
+        Row: {
+          id: string
+          user_id: string
+          report_id: string | null
+          reminder_type: string
+          title: string
+          description: string | null
+          due_date: string | null
+          is_completed: boolean
+          priority: 'low' | 'medium' | 'high' | 'urgent'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          report_id?: string | null
+          reminder_type: string
+          title: string
+          description?: string | null
+          due_date?: string | null
+          is_completed?: boolean
+          priority?: 'low' | 'medium' | 'high' | 'urgent'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          report_id?: string | null
+          reminder_type?: string
+          title?: string
+          description?: string | null
+          due_date?: string | null
+          is_completed?: boolean
+          priority?: 'low' | 'medium' | 'high' | 'urgent'
+          updated_at?: string
+        }
+      }
+      medical_data: {
+        Row: {
+          id: string
+          report_id: string
+          user_id: string
+          numerical_indicators: Record<string, any> | null
+          imaging_findings: Record<string, any> | null
+          pathology_results: Record<string, any> | null
+          tcm_diagnosis: Record<string, any> | null
+          clinical_diagnosis: Record<string, any> | null
+          examination_info: Record<string, any> | null
+          raw_text: string | null
+          ai_analysis: Record<string, any> | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          report_id: string
+          user_id: string
+          numerical_indicators?: Record<string, any> | null
+          imaging_findings?: Record<string, any> | null
+          pathology_results?: Record<string, any> | null
+          tcm_diagnosis?: Record<string, any> | null
+          clinical_diagnosis?: Record<string, any> | null
+          examination_info?: Record<string, any> | null
+          raw_text?: string | null
+          ai_analysis?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          report_id?: string
+          user_id?: string
+          numerical_indicators?: Record<string, any> | null
+          imaging_findings?: Record<string, any> | null
+          pathology_results?: Record<string, any> | null
+          tcm_diagnosis?: Record<string, any> | null
+          clinical_diagnosis?: Record<string, any> | null
+          examination_info?: Record<string, any> | null
+          raw_text?: string | null
+          ai_analysis?: Record<string, any> | null
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -265,16 +360,20 @@ export interface Database {
   }
 }
 
-// 便捷类型别名
+// Type helpers for easier access
 export type UserProfile = Database['public']['Tables']['user_profiles']['Row']
 export type HealthReport = Database['public']['Tables']['health_reports']['Row']
 export type ReportAnalysis = Database['public']['Tables']['report_analyses']['Row']
 export type AIConsultation = Database['public']['Tables']['ai_consultations']['Row']
 export type HealthMetric = Database['public']['Tables']['health_metrics']['Row']
+export type HealthReminder = Database['public']['Tables']['health_reminders']['Row']
+export type MedicalData = Database['public']['Tables']['medical_data']['Row']
 
-// 插入类型
+// Insert types
 export type UserProfileInsert = Database['public']['Tables']['user_profiles']['Insert']
 export type HealthReportInsert = Database['public']['Tables']['health_reports']['Insert']
 export type ReportAnalysisInsert = Database['public']['Tables']['report_analyses']['Insert']
 export type AIConsultationInsert = Database['public']['Tables']['ai_consultations']['Insert']
-export type HealthMetricInsert = Database['public']['Tables']['health_metrics']['Insert'] 
+export type HealthMetricInsert = Database['public']['Tables']['health_metrics']['Insert']
+export type HealthReminderInsert = Database['public']['Tables']['health_reminders']['Insert']
+export type MedicalDataInsert = Database['public']['Tables']['medical_data']['Insert'] 

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { Database, UserProfile, HealthReport, ReportAnalysis, AIConsultation, HealthMetric } from './types'
+import { Database, UserProfile, HealthReport, ReportAnalysis, AIConsultation, HealthMetric, HealthReminder, MedicalData } from './types'
 
 export class HealthDatabaseClient {
   private supabase
@@ -60,7 +60,10 @@ export class HealthDatabaseClient {
   async createHealthReport(report: Omit<HealthReport, 'id' | 'created_at' | 'updated_at'>): Promise<HealthReport | null> {
     const { data, error } = await this.supabase
       .from('health_reports')
-      .insert(report)
+      .insert({
+        ...report,
+        report_type: report.report_type || 'modern' // 设置默认值
+      })
       .select()
       .single()
 
@@ -102,7 +105,10 @@ export class HealthDatabaseClient {
   async createReportAnalysis(analysis: Omit<ReportAnalysis, 'id' | 'created_at' | 'updated_at'>): Promise<ReportAnalysis | null> {
     const { data, error } = await this.supabase
       .from('report_analyses')
-      .insert(analysis)
+      .insert({
+        ...analysis,
+        analysis_type: analysis.analysis_type || 'comprehensive' // 设置默认值
+      })
       .select()
       .single()
 
@@ -250,5 +256,120 @@ export class HealthDatabaseClient {
     return this.updateUserProfile(userId, {
       consultation_count: profile.consultation_count + 1
     })
+  }
+
+  // 健康提醒相关操作
+  async createHealthReminder(reminder: Omit<HealthReminder, 'id' | 'created_at' | 'updated_at'>): Promise<HealthReminder | null> {
+    const { data, error } = await this.supabase
+      .from('health_reminders')
+      .insert(reminder)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('创建健康提醒失败:', error)
+      return null
+    }
+    return data
+  }
+
+  async getUserHealthReminders(userId: string): Promise<HealthReminder[]> {
+    const { data, error } = await this.supabase
+      .from('health_reminders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('due_date', { ascending: true })
+
+    if (error) {
+      console.error('获取用户健康提醒失败:', error)
+      return []
+    }
+    return data
+  }
+
+  async updateHealthReminderStatus(reminderId: string, isCompleted: boolean): Promise<boolean> {
+    const { error } = await this.supabase
+      .from('health_reminders')
+      .update({ 
+        is_completed: isCompleted, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', reminderId)
+
+    if (error) {
+      console.error('更新健康提醒状态失败:', error)
+      return false
+    }
+    return true
+  }
+
+  async getReportReminders(reportId: string): Promise<HealthReminder[]> {
+    const { data, error } = await this.supabase
+      .from('health_reminders')
+      .select('*')
+      .eq('report_id', reportId)
+      .order('due_date', { ascending: true })
+
+    if (error) {
+      console.error('获取报告相关提醒失败:', error)
+      return []
+    }
+    return data
+  }
+
+  // 医疗数据相关操作
+  async createMedicalData(medicalData: Omit<MedicalData, 'id' | 'created_at' | 'updated_at'>): Promise<MedicalData | null> {
+    const { data, error } = await this.supabase
+      .from('medical_data')
+      .insert(medicalData)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('创建医疗数据失败:', error)
+      return null
+    }
+    return data
+  }
+
+  async getMedicalDataByReport(reportId: string): Promise<MedicalData | null> {
+    const { data, error } = await this.supabase
+      .from('medical_data')
+      .select('*')
+      .eq('report_id', reportId)
+      .single()
+
+    if (error) {
+      console.error('获取医疗数据失败:', error)
+      return null
+    }
+    return data
+  }
+
+  async getUserMedicalData(userId: string): Promise<MedicalData[]> {
+    const { data, error } = await this.supabase
+      .from('medical_data')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('获取用户医疗数据失败:', error)
+      return []
+    }
+    return data
+  }
+
+  async updateMedicalData(reportId: string, updates: Partial<MedicalData>): Promise<boolean> {
+    const { error } = await this.supabase
+      .from('medical_data')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('report_id', reportId)
+
+    if (error) {
+      console.error('更新医疗数据失败:', error)
+      return false
+    }
+    return true
   }
 } 
