@@ -7,7 +7,7 @@ export function useAIAnalysis(azureAI: AzureHealthAISystem, dbOperations?: any) 
   const [isReanalyzing, setIsReanalyzing] = useState(false)
   const [aiAnalysisSteps, setAiAnalysisSteps] = useState<ProcessingStep[]>([
     { name: '健康指标解析', status: 'pending', progress: 0 },
-    { name: 'Azure OpenAI分析', status: 'pending', progress: 0 },
+    { name: 'AI分析', status: 'pending', progress: 0 },
     { name: '生成智能报告', status: 'pending', progress: 0 },
     { name: '保存数据到数据库', status: 'pending', progress: 0 }
   ])
@@ -85,8 +85,8 @@ export function useAIAnalysis(azureAI: AzureHealthAISystem, dbOperations?: any) 
         throw parseError
       }
       
-      // Step 2: Azure OpenAI健康分析
-      updateAIStep(1, 'processing', '正在进行Azure OpenAI智能分析...', 30)
+      // Step 2: AI健康分析
+      updateAIStep(1, 'processing', '正在进行AI智能分析...', 30)
       
       let analysis: AnalysisResult
       try {
@@ -185,7 +185,7 @@ export function useAIAnalysis(azureAI: AzureHealthAISystem, dbOperations?: any) 
     setError(null)
     setAiAnalysisSteps([
       { name: '健康指标解析', status: 'pending', progress: 0 },
-      { name: 'Azure OpenAI分析', status: 'pending', progress: 0 },
+      { name: 'AI分析', status: 'pending', progress: 0 },
       { name: '生成智能报告', status: 'pending', progress: 0 },
       { name: '保存数据到数据库', status: 'pending', progress: 0 }
     ])

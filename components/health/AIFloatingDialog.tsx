@@ -117,7 +117,7 @@ export default function AIFloatingDialog({
 
 请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
         
-        // 【调用场景：浮窗对话中的健康指标智能解读】+【Azure OpenAI Chat Completions API - 对话式指标分析】
+        // 【调用场景：浮窗对话中的健康指标智能解读】+【AI Chat Completions API - 对话式指标分析】
         // 使用获取到的用户档案
         console.log('📤 [AIFloatingDialog] 发送健康指标解读请求到Azure AI');
         console.log('👤 [AIFloatingDialog] 使用用户档案:', userProfile ? '已获取' : '未获取');
@@ -142,7 +142,7 @@ export default function AIFloatingDialog({
 
 请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
         
-        // 【调用场景：浮窗对话中的文字解读分析】+【Azure OpenAI Chat Completions API - 文本内容智能分析】
+        // 【调用场景：浮窗对话中的文字解读分析】+【AI Chat Completions API - 文本内容智能分析】
         console.log('📤 [AIFloatingDialog] 发送文字解读请求到Azure AI');
         console.log('👤 [AIFloatingDialog] 使用用户档案:', userProfile ? '已获取' : '未获取');
         
@@ -167,7 +167,7 @@ export default function AIFloatingDialog({
 
 请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
         
-        // 【调用场景：浮窗对话中的对象数据解读】+【Azure OpenAI Chat Completions API - 结构化数据智能解析】
+        // 【调用场景：浮窗对话中的对象数据解读】+【AI Chat Completions API - 结构化数据智能解析】
         console.log('📤 [AIFloatingDialog] 发送对象解读请求到Azure AI');
         console.log('👤 [AIFloatingDialog] 使用用户档案:', userProfile ? '已获取' : '未获取');
         
@@ -402,7 +402,7 @@ export default function AIFloatingDialog({
         console.log('🔄 [AIFloatingDialog] 使用外部AI查询函数');
         aiResponse = await onAIQuery(messageToSend, initialContext)
       } else {
-        // 【调用场景：浮窗对话中的用户自由提问交互】+【Azure OpenAI Chat Completions API - 开放式健康问答】
+        // 【调用场景：浮窗对话中的用户自由提问交互】+【AI Chat Completions API - 开放式健康问答】
         // 使用获取到的用户档案
         console.log('🤖 [AIFloatingDialog] 使用内置Azure AI服务');
         console.log('👤 [AIFloatingDialog] 使用用户档案:', userProfile ? '已获取' : '未获取');

@@ -39,7 +39,7 @@ export function useOCRProcessing() {
 
     try {
       // Step 1: Azure OCR文本提取
-      updateStep(0, 'processing', 'x正在连接Vision...', 10)
+      updateStep(0, 'processing', '正在连接Vision...', 10)
       
       let ocrResponse: { extractedText: string[], parsedResult?: any }
       try {

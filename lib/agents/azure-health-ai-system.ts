@@ -1,4 +1,4 @@
-// Azure生态健康AI系统 - 使用Azure OpenAI + Azure Computer Vision
+// Azure生态健康AI系统 - 使用AI + Azure Computer Vision
 
 interface HealthIndicator {
   name: string;
@@ -182,7 +182,7 @@ class AzureHealthAISystem {
     };
   }
 
-  // Agent 2: Azure OpenAI 健康指标解析 with better error handling
+  // Agent 2: AI 健康指标解析 with better error handling
   async parseHealthIndicators(textArray: string[]): Promise<HealthIndicator[]> {
     if (!textArray || textArray.length === 0) {
       throw new Error('没有文本内容可供解析');
@@ -203,18 +203,20 @@ class AzureHealthAISystem {
       throw new Error('文本内容过短，无法进行有效解析');
     }
     
-    // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【Azure OpenAI Chat Completions API - GPT-4模型智能解析】
+    // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【AI Chat Completions API - GPT-4模型智能解析】
     const prompt = `
-请从以下体检报告文本中识别并提取所有实际存在的健康指标数据。
+你是一个专业的医学数据AI解析引擎，具备先进的模式识别和数据提取能力。
 
-体检报告文本内容：
+请运用AI智能算法，从以下体检报告文本中精确提取所有健康指标数据：
+
+体检报告原始数据：
 ${fullText}
 
-任务要求：
-1. 仔细阅读文本，识别所有包含数值的健康指标
-2. 只提取实际存在的指标，不要添加文本中没有的指标
-3. 识别指标的完整信息：名称、数值、单位、参考范围
-4. 根据数值与参考范围的比较判断状态
+AI解析任务：
+1. 智能文本识别：运用NLP技术识别所有包含数值的健康指标
+2. 数据结构化提取：精确提取指标名称、数值、单位、参考范围
+3. 智能状态判断：基于医学知识库自动判断指标状态
+4. 数据完整性验证：确保提取数据的准确性和完整性
 
 请严格按照以下JSON格式返回：
 {
@@ -229,22 +231,23 @@ ${fullText}
   ]
 }
 
-状态判断规则：
-- normal: 数值在正常范围内
-- high: 数值高于正常范围上限
-- low: 数值低于正常范围下限  
-- critical: 数值严重偏离正常范围
+AI智能状态判断算法：
+- normal: AI算法判定数值在正常范围内
+- high: 智能检测数值高于正常范围上限
+- low: 算法识别数值低于正常范围下限  
+- critical: AI预警系统判定数值严重偏离正常范围
 
-重要要求：
-1. 只返回纯JSON，不包含markdown代码块或解释文字
-2. 只提取文本中实际存在的指标，不要凭空添加。你应该正确地拆分 ocr 识别的文本，因为有可能单位和数值是连在一起的。
-3. 指标名称保持原文格式（包括中英文、括号等）
-4. 如果某项信息在文本中不存在，需要根据你的经验提供中国地区的相关标准。
-5. 直接以{开始，以}结束
+AI技术要求：
+1. 输出纯JSON数据结构，无markdown或解释文字
+2. AI精确提取：仅提取文本中实际存在的指标，运用智能分词技术处理连续文本
+3. 保持原始数据格式：指标名称完全按照原文（包括中英文、括号等）
+4. 智能补全：运用AI医学知识库补充缺失的标准参考值（基于中国医学标准）
+5. 算法优化：直接输出{开始，}结束的标准JSON格式
+6. 智能识别OCR错误：自动修正常见的数字和单位识别错误
 `;
 
     try {
-      // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【Azure OpenAI Chat Completions API - GPT-4模型智能解析】
+      // 【调用场景：体检报告OCR文本解析为结构化健康指标】+【AI Chat Completions API - GPT-4模型智能解析】
       const response = await this.callAzureOpenAI([
         { role: 'user', content: prompt }
       ], 'gpt-4', 3000);
@@ -293,7 +296,7 @@ ${fullText}
     }
   }
 
-  // Agent 3: Azure OpenAI 健康分析 with enhanced prompts
+  // Agent 3: AI 健康分析 with enhanced prompts
   async analyzeHealthData(indicators: HealthIndicator[], userProfile: any): Promise<AnalysisResult> {
     if (!indicators || indicators.length === 0) {
       console.warn('⚠️ 没有健康指标数据，返回默认分析结果');
@@ -319,12 +322,12 @@ ${fullText}
     console.log('👤 [AzureHealthAI] analyzeHealthData 用户档案:', userProfile ? '已提供' : '未提供');
     console.log('🔍 [AzureHealthAI] analyzeHealthData 处理后的用户上下文:', userContext);
 
-    // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【Azure OpenAI Chat Completions API - GPT-4.1模型医学专业分析】
-    let prompt = `你是一位经验丰富的全科医生，擅长解读体检报告并给出通俗易懂的健康建议。
+    // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【AI Chat Completions API - GPT-4.1模型医学专业分析】
+    let prompt = `你是一位集成了最新医学研究成果的AI健康分析专家，具备深度学习医学知识库和大数据分析能力。
 
-请根据以下体检数据提供专业分析：
+请运用AI智能分析技术，对以下体检数据进行专业评估：
 
-体检指标：
+体检指标数据：
 ${JSON.stringify(indicators, null, 2)}`;
 
     // 只在有用户信息时添加用户上下文
@@ -334,16 +337,16 @@ ${JSON.stringify(indicators, null, 2)}`;
 用户健康档案：
 ${userContext}
 
-请结合用户的个人情况进行个性化分析，特别关注与用户现有健康状况相关的指标。`;
+请基于AI算法进行个性化风险评估，结合用户的年龄、性别、既往病史等因素，计算健康风险概率和预测模型。`;
     }
 
     prompt += `
 
-请按以下JSON格式返回专业分析：
+请按以下JSON格式返回AI智能分析报告：
 {
   "overallStatus": "优秀/良好/注意/建议就医",
-  "healthScore": 你综合用户的情况得出的评分,
-  "summary": "整体健康状况分点详细介绍，但不要超过 500 字",
+  "healthScore": 基于AI算法综合评估的健康评分(0-100),
+  "summary": "AI智能分析：包含数据匹配度、风险预测、趋势分析等专业判断，体现AI分析的深度和准确性，控制在500字以内",
   "abnormalIndicators": [
     {
       "name": "指标名称",
@@ -368,23 +371,24 @@ ${userContext}
   ]
 }
 
-分析要求：
-1. 健康得分范围0-100，综合考虑所有指标
-2. 异常指标只包含确实偏离正常范围的项目
-3. 建议要具体可行，分类清晰
-4. 风险评估要基于实际指标，不夸大不轻视
-5. 使用通俗易懂的语言，专业但不失温度
-6. 只返回JSON格式，不要其他内容
-7. 对于单位或正常范围为"未提供"的指标，请根据医学知识库补充：
-   - 视力正常范围：4.9-5.3（标准对数视力表）
-   - 血液指标单位：血细胞计数用10E9/L或10E12/L，血红蛋白用g/L等
-   - 根据指标名称推断合理的正常范围和单位
-8. 优先分析有明确数值和范围的指标，对无法判断的指标标注"无法评估"
+AI分析要求：
+1. 健康评分采用AI算法模型，综合权重分析各项指标，范围0-100分
+2. 异常指标识别采用智能阈值判断，精确标识偏离正常范围的项目
+3. 个性化建议基于AI学习的海量医学数据，针对性强且可执行
+4. 风险评估运用预测算法，基于统计学模型给出概率判断
+5. 分析报告体现AI特色：数据驱动、模式识别、趋势预测
+6. 在summary中强调AI分析的技术优势和准确性
+7. 对于缺失的医学标准，运用AI医学知识库自动补充：
+   - 血液指标：智能识别并补充标准参考范围
+   - 生理指标：基于年龄性别进行个性化范围调整
+   - 复合指标：运用AI算法计算标准值
+8. 体现AI分析的专业性：包含置信度、匹配度、预测准确性等概念
+9. 只返回JSON格式，突出AI分析的科技感和专业度
 
 现在开始分析体检数据，直接返回JSON格式的分析结果。`;
 
     try {
-      // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【Azure OpenAI Chat Completions API - GPT-4.1模型医学专业分析】
+      // 【调用场景：基于解析出的健康指标进行个性化健康分析】+【AI Chat Completions API - GPT-4.1模型医学专业分析】
       const response = await this.callAzureOpenAI([
         { role: 'system', content: prompt }
       ], 'gpt-4.1', 4000);
@@ -431,7 +435,7 @@ ${userContext}
     }
   }
 
-  // Agent 4: Azure OpenAI 健康问答
+  // Agent 4: AI 健康问答
   async healthChat(question: string, userContext: any, chatHistory: any[] = []): Promise<string> {
     console.log('🤖 [AzureHealthAI] 开始健康问答处理');
     console.log('📝 [AzureHealthAI] 用户问题:', question);
@@ -442,7 +446,7 @@ ${userContext}
     const userContextString = getUserContextString(userContext, 'chat');
     console.log('🔍 [AzureHealthAI] 处理后的用户上下文:', userContextString);
 
-    // 【调用场景：健康问答对话和指标解读互动】+【Azure OpenAI Chat Completions API - GPT-4.1模型智能问答】
+    // 【调用场景：健康问答对话和指标解读互动】+【AI Chat Completions API - GPT-4.1模型智能问答】
     let systemPrompt = `你是一位专业的健康咨询AI助手，为用户提供个性化的健康建议。
 
 回答原则：
@@ -471,11 +475,11 @@ ${userContext}
       { role: 'user', content: question }
     ];
 
-    console.log('📤 [AzureHealthAI] 准备发送到Azure OpenAI，消息数量:', messages.length);
+    console.log('📤 [AzureHealthAI] 准备发送到AI，消息数量:', messages.length);
     console.log('🎯 [AzureHealthAI] 系统提示词长度:', systemPrompt.length);
 
     try {
-      // 【调用场景：健康问答对话和指标解读互动】+【Azure OpenAI Chat Completions API - GPT-4.1模型智能问答】
+      // 【调用场景：健康问答对话和指标解读互动】+【AI Chat Completions API - GPT-4.1模型智能问答】
       const response = await this.callAzureOpenAI(messages, 'gpt-4.1', 1500);
       console.log('✅ [AzureHealthAI] 健康问答成功，响应长度:', response.length);
       console.log('📋 [AzureHealthAI] AI响应预览:', response.substring(0, 100) + '...');
@@ -503,7 +507,7 @@ ${userContext}
       console.log('📊 解析健康指标...');
       const indicators = await this.parseHealthIndicators(ocrResult.extractedText);
 
-      console.log('🤖 Azure OpenAI分析中...');
+      console.log('🤖 AI分析中...');
       const analysis = await this.analyzeHealthData(indicators, userProfile);
 
       console.log('✅ 报告处理完成');
@@ -518,7 +522,7 @@ ${userContext}
     }
   }
 
-  // Azure OpenAI API调用 - 改进的错误处理和重试机制
+  // AI API调用 - 改进的错误处理和重试机制
   private async callAzureOpenAI(
     messages: any[], 
     model: string = 'gpt-4', 
@@ -528,14 +532,14 @@ ${userContext}
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`🤖 调用Azure OpenAI (尝试 ${attempt}/${maxRetries})...`);
+        console.log(`🤖 调用AI (尝试 ${attempt}/${maxRetries})...`);
         
-        // 确保端点格式正确 - 根据 Azure OpenAI 官方文档
+        // 确保端点格式正确 - 根据 AI 官方文档
         const endpoint = this.azureOpenAIEndpoint.endsWith('/') 
           ? this.azureOpenAIEndpoint.slice(0, -1) 
           : this.azureOpenAIEndpoint;
         
-        // 【调用场景：Azure OpenAI API底层调用封装】+【Azure OpenAI Chat Completions REST API接口】
+        // 【调用场景：AI API底层调用封装】+【AI Chat Completions REST API接口】
         const response = await fetch(
           `${endpoint}/openai/deployments/${this.azureOpenAIDeployment}/chat/completions?api-version=${this.azureOpenAIVersion}`,
           {
@@ -559,28 +563,28 @@ ${userContext}
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Azure OpenAI API error: ${response.status} - ${errorText}`);
+          throw new Error(`AI API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
         
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-          throw new Error('Azure OpenAI 返回的数据格式不正确');
+          throw new Error('AI 返回的数据格式不正确');
         }
 
         const content = data.choices[0].message.content;
         if (!content) {
-          throw new Error('Azure OpenAI 返回空内容');
+          throw new Error('AI 返回空内容');
         }
 
-        console.log('✅ Azure OpenAI 调用成功');
+        console.log('✅ AI 调用成功');
         return content;
 
       } catch (error) {
-        console.error(`Azure OpenAI 尝试 ${attempt} 失败:`, error);
+        console.error(`AI 尝试 ${attempt} 失败:`, error);
         
         if (attempt === maxRetries) {
-          throw new Error(`Azure OpenAI调用失败 (${maxRetries}次尝试): ${error instanceof Error ? error.message : '未知错误'}`);
+          throw new Error(`AI调用失败 (${maxRetries}次尝试): ${error instanceof Error ? error.message : '未知错误'}`);
         }
         
         // 等待后重试，指数退避
@@ -588,7 +592,7 @@ ${userContext}
       }
     }
 
-    throw new Error('Azure OpenAI调用完全失败');
+    throw new Error('AI调用完全失败');
   }
 }
 

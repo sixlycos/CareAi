@@ -49,7 +49,7 @@ export default function AzureAITestPage() {
     setOverallProgress(0)
 
     try {
-      // Test 1: Azure OpenAI 连接测试
+      // Test 1: AI 连接测试
       updateTestResult(0, 'running')
       const startTime1 = Date.now()
       
@@ -59,7 +59,7 @@ export default function AzureAITestPage() {
         ]
         await azureAI['callAzureOpenAI'](testMessages, 'gpt-4', 100)
         const duration1 = Date.now() - startTime1
-        updateTestResult(0, 'success', 'Azure OpenAI 连接正常', duration1)
+        updateTestResult(0, 'success', 'AI 连接正常', duration1)
       } catch (error) {
         updateTestResult(0, 'error', `连接失败: ${error instanceof Error ? error.message : '未知错误'}`)
       }
@@ -195,7 +195,7 @@ export default function AzureAITestPage() {
     <div className="max-w-4xl mx-auto space-y-6 p-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold mb-2">Azure AI 系统测试</h1>
-        <p className="text-gray-600">验证 Azure OpenAI 和 Computer Vision 服务集成</p>
+        <p className="text-gray-600">验证 AI 和 Computer Vision 服务集成</p>
       </div>
 
       {/* 测试概览 */}
@@ -288,7 +288,7 @@ export default function AzureAITestPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <strong>Azure OpenAI:</strong>
+              <strong>AI:</strong>
               <div className="text-gray-600 font-mono break-all">
                 {process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT || '未配置'}
               </div>
@@ -319,7 +319,7 @@ export default function AzureAITestPage() {
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>说明：</strong> 此页面用于测试 Azure AI 服务的集成。请确保在 .env.local 文件中配置了正确的 Azure OpenAI 和 Computer Vision 服务凭据。
+          <strong>说明：</strong> 此页面用于测试 Azure AI 服务的集成。请确保在 .env.local 文件中配置了正确的 AI 和 Computer Vision 服务凭据。
         </AlertDescription>
       </Alert>
     </div>

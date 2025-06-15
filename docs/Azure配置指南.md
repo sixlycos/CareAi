@@ -1,6 +1,6 @@
 # Azure健康AI系统配置指南
 
-## 🎯 Azure OpenAI + Azure Computer Vision 方案
+## 🎯 AI + Azure Computer Vision 方案
 
 ### 为什么推荐Azure生态？
 
@@ -11,12 +11,12 @@
 
 ## 🔧 必需的环境变量配置
 
-### Azure OpenAI 配置
+### AI 配置
 ```env
-# Azure OpenAI服务端点
+# AI服务端点
 NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
 
-# Azure OpenAI API密钥
+# AI API密钥
 NEXT_PUBLIC_AZURE_OPENAI_KEY=your-azure-openai-api-key
 
 # API版本（推荐最新版本）
@@ -40,11 +40,11 @@ NEXT_PUBLIC_AZURE_VISION_KEY=your-azure-vision-api-key
 
 ## 🚀 Azure服务创建步骤
 
-### 1. 创建Azure OpenAI服务
+### 1. 创建AI服务
 
 ```bash
 # 1. 登录Azure门户
-# 2. 创建资源 → AI + 机器学习 → Azure OpenAI
+# 2. 创建资源 → AI + 机器学习 → AI
 # 3. 配置基本信息：
 #    - 订阅：选择你的订阅
 #    - 资源组：创建新的或选择现有的
@@ -53,7 +53,7 @@ NEXT_PUBLIC_AZURE_VISION_KEY=your-azure-vision-api-key
 #    - 定价层：标准 S0
 
 # 4. 部署模型：
-#    - 进入Azure OpenAI Studio
+#    - 进入AI Studio
 #    - 模型部署 → 创建新部署
 #    - 模型：gpt-4（用于分析）、gpt-35-turbo（用于问答）
 #    - 部署名称：自定义，如 gpt-4-health、gpt-35-turbo-chat
@@ -74,7 +74,7 @@ NEXT_PUBLIC_AZURE_VISION_KEY=your-azure-vision-api-key
 ### 3. 获取API密钥和端点
 
 ```bash
-# Azure OpenAI：
+# AI：
 # 1. 进入你的OpenAI资源
 # 2. 密钥和终结点 → 复制密钥1和终结点
 # 3. 终结点格式：https://your-resource-name.openai.azure.com/
@@ -99,19 +99,19 @@ NEXT_PUBLIC_AZURE_VISION_KEY=your-azure-vision-api-key
 
 ### 推荐方案
 
-#### 🥇 **首选：Azure Computer Vision + Azure OpenAI**
+#### 🥇 **首选：Azure Computer Vision + AI**
 - ✅ 统一Azure生态，管理简单
 - ✅ 企业级安全和稳定性
 - ✅ 地域就近，访问速度快
 - ✅ 一站式计费和支持
 
-#### 🥈 **备选：阿里云OCR + Azure OpenAI**
+#### 🥈 **备选：阿里云OCR + AI**
 - ✅ 中文识别优秀
 - ✅ 国内访问稳定
 - ✅ 成本更低
 - ❌ 需要管理两个云服务商
 
-#### 🥉 **预算优先：百度OCR + Azure OpenAI**
+#### 🥉 **预算优先：百度OCR + AI**
 - ✅ 免费额度大（1000次/天）
 - ✅ 中文支持好
 - ❌ 商用需要申请
@@ -121,7 +121,7 @@ NEXT_PUBLIC_AZURE_VISION_KEY=your-azure-vision-api-key
 
 ### Azure方案成本（月）
 ```
-Azure OpenAI（GPT-4）:
+AI（GPT-4）:
 - 输入：$0.03/1K tokens × 1000 tokens × 100次 = $3
 - 输出：$0.06/1K tokens × 500 tokens × 100次 = $3
 小计：$6
@@ -192,7 +192,7 @@ export async function POST(request: Request) {
 
 ### 2. 请求频率限制
 ```typescript
-// Azure OpenAI默认限制：
+// AI默认限制：
 // - GPT-4: 20,000 tokens/minute
 // - GPT-3.5: 120,000 tokens/minute
 // - 建议添加重试和限流机制

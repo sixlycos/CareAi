@@ -15,7 +15,7 @@ export function useAIExplain(azureAI: AzureHealthAISystem) {
     setIndicatorExplanation(null)
 
     try {
-      // 【调用场景：单个健康指标快速解读服务】+【Azure OpenAI Chat Completions API - 指标解读助手】
+      // 【调用场景：单个健康指标快速解读服务】+【AI Chat Completions API - 指标解读助手】
       // 构建解读请求
       const explainPrompt = `请为以下健康指标提供个性化解读：
 
@@ -37,7 +37,7 @@ export function useAIExplain(azureAI: AzureHealthAISystem) {
 
 请用通俗易懂的中文，每个部分控制在2-3句话以内。语气专业但温和友善。`
 
-      // 【调用场景：单个健康指标快速解读服务】+【Azure OpenAI Chat Completions API - 指标解读助手】
+      // 【调用场景：单个健康指标快速解读服务】+【AI Chat Completions API - 指标解读助手】
       // 调用AI获取解读
       const explanation = await azureAI.healthChat(explainPrompt, {
         indicator: indicator,
